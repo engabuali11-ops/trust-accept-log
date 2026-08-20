@@ -663,12 +663,65 @@ function k(e) {
   return !!e && e !== `بدون`;
 }
 // تفصيل آلي: [{ serial, count }] مرتبطة برقم الفاتورة/التسلسل
-function buildBreak(list) {
+function buildBreak(list, counter) {
   return (list ?? [])
-    .map((o) => ({ serial: o.serial, count: Number(o.count) || 0 }))
+    .map((o) => ({
+      serial: o.serial,
+      count: counter ? counter(o) : Number(o.count) || 0,
+    }))
     .filter((r) => r.count > 0)
     .sort((a, b) => a.serial - b.serial);
 }
+/* ============ متابعة ذكية على مستوى كل ثوب داخل الفاتورة ============ */
+var ITEM_STAGES = [`قيد القص`, `قيد الخياطة`, `قيد التطريز`, `قيد الكوي`, `جاهز`, `تم التسليم`];
+function defaultStageFor(status) {
+  return status === `تم التسليم`
+    ? `تم التسليم`
+    : status === `جاهز`
+      ? `جاهز`
+      : status === `قيد التنفيذ`
+        ? `قيد الخياطة`
+        : `قيد القص`;
+}
+/** ثياب الفاتورة مرتبطة آلياً برقم الفاتورة وتسلسل الثوب. */
+function orderItems(o) {
+  let count = Math.max(1, Number(C(o?.count)) || 0),
+    saved = Array.isArray(o?.items) ? o.items : [],
+    def = defaultStageFor(o?.status);
+  return Array.from({ length: count }, (_, i) => {
+    let s = saved[i],
+      stage = s && ITEM_STAGES.includes(s.stage) ? s.stage : def;
+    return { idx: i + 1, stage };
+  });
+}
+function isReadyStage(s) {
+  return s === `جاهز` || s === `تم التسليم`;
+}
+function countReadyItems(o) {
+  return orderItems(o).filter((it) => isReadyStage(it.stage)).length;
+}
+function countDeliveredItems(o) {
+  return orderItems(o).filter((it) => it.stage === `تم التسليم`).length;
+}
+function countPendingItems(o) {
+  return orderItems(o).filter((it) => !isReadyStage(it.stage)).length;
+}
+/** حالة الفاتورة تُشتق آلياً من حالات ثيابها. */
+function statusFromItems(items, prev) {
+  if (!items.length) return prev;
+  if (prev === `ملغي`) return prev;
+  if (items.every((it) => it.stage === `تم التسليم`)) return `تم التسليم`;
+  if (items.every((it) => isReadyStage(it.stage))) return `جاهز`;
+  return `قيد التنفيذ`;
+}
+function withItems(o, items) {
+  return {
+    ...o,
+    items: items.map((it) => ({ idx: it.idx, stage: it.stage })),
+    status: statusFromItems(items, o.status),
+  };
+}
+
 // محدد الكسر الذكي: اختيار الكسر، والضغط على نفس الكسر يلغيه (بدون كلمة «بدون»)
 function FracSelect({ value: val, onChange, className: cls = ``, ariaLabel = `الكسر`, disabled }) {
   let [open, setOpen] = React.useState(!1),
@@ -2287,6 +2340,9 @@ function fe() {
     [tailorOpen, setTailorOpen] = (0, u.useState)(!1),
     [tailorBoardOpen, setTailorBoardOpen] = (0, u.useState)(!1),
     [tailorBoardQuery, setTailorBoardQuery] = (0, u.useState)(``),
+    [deliverOrder, setDeliverOrder] = (0, u.useState)(null),
+    [deliverSel, setDeliverSel] = (0, u.useState)([]),
+
     [settings, setSettings] = (0, u.useState)(DEFAULT_SETTINGS);
   let currentSerialRef = (0, u.useRef)(0);
   (0, u.useEffect)(() => {
@@ -2631,20 +2687,20 @@ function fe() {
       () =>
         getTailors(settings).map((tl) => {
           let own = e.filter((o) => o.tailorId === tl.id),
-            total = own.reduce((a, o) => a + (C(o.count) || 0), 0),
-            readyOrders = own.filter((o) => o.status === `جاهز` || isDelivered(o)),
-            pendingOrders = own.filter((o) => !(o.status === `جاهز` || isDelivered(o))),
-            ready = readyOrders.reduce((a, o) => a + (C(o.count) || 0), 0);
+            total = own.reduce((a, o) => a + orderItems(o).length, 0),
+            ready = own.reduce((a, o) => a + countReadyItems(o), 0),
+            delivered = own.reduce((a, o) => a + countDeliveredItems(o), 0);
           return {
             id: tl.id,
             name: tl.name || `بدون اسم`,
             phone: tl.whatsapp || tl.phone || ``,
             serials: own.map((o) => o.serial).sort((a, b) => a - b),
             // تفصيل ذكي وآلي: كل رقم فاتورة/تسلسل مع عدد ثيابه (جاهزة / غير جاهزة)
-            readyBreak: buildBreak(readyOrders),
-            pendingBreak: buildBreak(pendingOrders),
+            readyBreak: buildBreak(own, countReadyItems),
+            pendingBreak: buildBreak(own, countPendingItems),
             total,
             ready,
+            delivered,
             pending: Math.max(0, total - ready),
           };
         }),
@@ -2659,26 +2715,85 @@ function fe() {
               .map((st) => {
                 // عدد الثياب الخاص برقم الطلب المطلوب فقط
                 let matched = st.serials.filter((sn) => String(sn).includes(boardSerialQuery)),
-                  own = e.filter(
-                    (o) => o.tailorId === st.id && matched.includes(o.serial),
-                  ),
-                  total = own.reduce((a, o) => a + (C(o.count) || 0), 0),
-                  readyOrders = own.filter((o) => o.status === `جاهز` || isDelivered(o)),
-                  pendingOrders = own.filter((o) => !(o.status === `جاهز` || isDelivered(o))),
-                  ready = readyOrders.reduce((a, o) => a + (C(o.count) || 0), 0);
+                  own = e.filter((o) => o.tailorId === st.id && matched.includes(o.serial)),
+                  total = own.reduce((a, o) => a + orderItems(o).length, 0),
+                  ready = own.reduce((a, o) => a + countReadyItems(o), 0),
+                  delivered = own.reduce((a, o) => a + countDeliveredItems(o), 0);
                 return {
                   ...st,
                   serials: matched,
-                  readyBreak: buildBreak(readyOrders),
-                  pendingBreak: buildBreak(pendingOrders),
+                  readyBreak: buildBreak(own, countReadyItems),
+                  pendingBreak: buildBreak(own, countPendingItems),
                   total,
                   ready,
+                  delivered,
                   pending: Math.max(0, total - ready),
                 };
               })
+
           : tailorStats,
       [tailorStats, boardSerialQuery, e],
     ),
+    // كل ثوب مرتبط آلياً برقم الفاتورة + تسلسل الثوب + العميل + الخياط
+    boardItems = (0, u.useMemo)(() => {
+      let list = boardSerialQuery
+        ? e.filter((o) => String(o.serial).includes(boardSerialQuery))
+        : e;
+      return [...list]
+        .sort((a, b) => a.serial - b.serial)
+        .flatMap((o) => {
+          let tl = findTailor(settings, o.tailorId);
+          return orderItems(o).map((it) => ({
+            key: `${o.serial}-${it.idx}`,
+            serial: o.serial,
+            idx: it.idx,
+            stage: it.stage,
+            client: o.name || `—`,
+            tailorName: tl?.name || `— غير محدد —`,
+            order: o,
+          }));
+        });
+    }, [e, settings, boardSerialQuery]),
+    boardTotals = (0, u.useMemo)(
+      () => ({
+        total: boardItems.length,
+        ready: boardItems.filter((it) => it.stage === `جاهز`).length,
+        delivered: boardItems.filter((it) => it.stage === `تم التسليم`).length,
+        pending: boardItems.filter((it) => !isReadyStage(it.stage)).length,
+      }),
+      [boardItems],
+    ),
+    // حفظ فوري (محلي + سحابي) لأي تعديل على ثياب فاتورة
+    applyOrder = (next) => {
+      let list = B(),
+        idx = list.findIndex((o) => Number(o.serial) === Number(next.serial));
+      (idx >= 0 ? (list[idx] = next) : list.push(next), D(list));
+      if (Number(n.serial) === Number(next.serial)) i(next);
+      pushCloudOrder(next).catch((err) => {
+        (queueCloudWrite({ kind: `order`, order: next }),
+          console.error(`cloud item save failed`, err));
+      });
+    },
+    setItemStage = (order, idx, stage) => {
+      let items = orderItems(order).map((it) => (it.idx === idx ? { ...it, stage } : it));
+      (applyOrder(withItems(order, items)),
+        r.success(`ثوب ${x(String(idx))} — فاتورة ${x(String(order.serial))}: ${stage}`));
+    },
+    deliverItems = (order, idxs) => {
+      let picked = idxs && idxs.length ? idxs : orderItems(order).map((it) => it.idx);
+      if (!picked.length) {
+        r.error(`اختر ثوباً واحداً على الأقل`);
+        return;
+      }
+      let items = orderItems(order).map((it) =>
+        picked.includes(it.idx) ? { ...it, stage: `تم التسليم` } : it,
+      );
+      (applyOrder(withItems(order, items)),
+        r.success(
+          `تم تسليم ${x(String(picked.length))} ثوب من الفاتورة ${x(String(order.serial))}`,
+        ));
+    },
+
     filteredOrders = (0, u.useMemo)(() => {
       let e = S2(query).trim().toLowerCase();
       return e
@@ -3292,6 +3407,11 @@ function fe() {
                           className: `border border-ink/40 p-2`,
                           children: `كرت العميل`,
                         }),
+                        (0, H.jsx)(`th`, {
+                          className: `border border-ink/40 p-2`,
+                          children: `التسليم للعميل`,
+                        }),
+
                       ],
                     }),
                   }),
@@ -3366,6 +3486,23 @@ function fe() {
                                   }),
                                 ],
                               }),
+                              (0, H.jsxs)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: [
+                                  (0, H.jsx)(`div`, {
+                                    className: `mb-1 text-[11px] font-bold`,
+                                    children: `${x(String(countDeliveredItems(e)))} / ${x(String(orderItems(e).length))}`,
+                                  }),
+                                  (0, H.jsx)(`button`, {
+                                    type: `button`,
+                                    onClick: () => {
+                                      (setDeliverOrder(e), setDeliverSel([]));
+                                    },
+                                    className: `rounded-md bg-ink px-3 py-1 text-[12px] font-bold text-sheet`,
+                                    children: `تسليم`,
+                                  }),
+                                ],
+                              }),
                             ],
                           },
                           e.serial,
@@ -3374,7 +3511,8 @@ function fe() {
                       filteredOrders.length === 0 &&
                         (0, H.jsx)(`tr`, {
                           children: (0, H.jsx)(`td`, {
-                            colSpan: 11,
+                            colSpan: 12,
+
                             className: `border border-ink/40 p-4`,
                             children: `لا توجد طلبات محفوظة`,
                           }),
@@ -3823,9 +3961,222 @@ function fe() {
                   }),
                 ],
               }),
+              // ملخص لحظي عام لعدد الثياب الجاهزة وغير الجاهزة والمسلّمة
+              (0, H.jsx)(`div`, {
+                className: `mt-4 grid grid-cols-4 gap-2`,
+                children: [
+                  { label: `إجمالي الثياب`, value: boardTotals.total },
+                  { label: `جاهزة للتسليم`, value: boardTotals.ready },
+                  { label: `غير جاهزة`, value: boardTotals.pending },
+                  { label: `تم تسليمها`, value: boardTotals.delivered },
+                ].map((s) =>
+                  (0, H.jsxs)(
+                    `div`,
+                    {
+                      className: `rounded-lg border border-ink/50 p-2 text-center text-ink`,
+                      children: [
+                        (0, H.jsx)(`div`, { className: `text-[12px] font-bold`, children: s.label }),
+                        (0, H.jsx)(`div`, {
+                          className: `text-[16px] font-bold`,
+                          children: x(String(s.value)),
+                        }),
+                      ],
+                    },
+                    s.label,
+                  ),
+                ),
+              }),
+              (0, H.jsx)(`h3`, {
+                className: `mt-4 mb-2 text-[14px] font-bold text-ink`,
+                children: `تفاصيل الثياب (فاتورة / تسلسل الثوب)`,
+              }),
+              (0, H.jsxs)(`table`, {
+                className: `w-full border-collapse text-center text-[12px] text-ink`,
+                children: [
+                  (0, H.jsx)(`thead`, {
+                    children: (0, H.jsx)(`tr`, {
+                      className: `bg-ink/10`,
+                      children: [
+                        `رقم الفاتورة`,
+                        `تسلسل الثوب`,
+                        `اسم العميل`,
+                        `الخياط المسؤول`,
+                        `حالة الثوب`,
+                        `تسليم`,
+                      ].map((h3) =>
+                        (0, H.jsx)(
+                          `th`,
+                          { className: `border border-ink/40 p-2`, children: h3 },
+                          h3,
+                        ),
+                      ),
+                    }),
+                  }),
+                  (0, H.jsxs)(`tbody`, {
+                    children: [
+                      ...boardItems.map((it) =>
+                        (0, H.jsxs)(
+                          `tr`,
+                          {
+                            className: it.stage === `تم التسليم` ? `bg-ink/5` : ``,
+                            children: [
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2 font-bold`,
+                                children: x(String(it.serial)),
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: x(String(it.idx)),
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: it.client,
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: it.tailorName,
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-1`,
+                                children: (0, H.jsx)(`select`, {
+                                  value: it.stage,
+                                  "aria-label": `حالة الثوب ${it.idx} للفاتورة ${it.serial}`,
+                                  onChange: (ev) =>
+                                    setItemStage(it.order, it.idx, ev.target.value),
+                                  className: `h-8 w-full rounded-md border border-ink/60 bg-transparent px-1 text-[12px] text-ink outline-none`,
+                                  children: ITEM_STAGES.map((s) =>
+                                    (0, H.jsx)(`option`, { value: s, children: s }, s),
+                                  ),
+                                }),
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-1`,
+                                children:
+                                  it.stage === `تم التسليم`
+                                    ? (0, H.jsx)(`span`, {
+                                        className: `text-[12px] font-bold`,
+                                        children: `تم التسليم`,
+                                      })
+                                    : (0, H.jsx)(`button`, {
+                                        type: `button`,
+                                        onClick: () => deliverItems(it.order, [it.idx]),
+                                        className: `rounded-md bg-ink px-2 py-1 text-[12px] font-bold text-sheet`,
+                                        children: `تسليم الثوب`,
+                                      }),
+                              }),
+                            ],
+                          },
+                          it.key,
+                        ),
+                      ),
+                      boardItems.length === 0 &&
+                        (0, H.jsx)(`tr`, {
+                          children: (0, H.jsx)(`td`, {
+                            colSpan: 6,
+                            className: `border border-ink/40 p-4`,
+                            children: `لا توجد ثياب مطابقة`,
+                          }),
+                        }),
+                    ],
+                  }),
+                ],
+              }),
             ],
+
           }),
         }),
+      deliverOrder &&
+        (() => {
+          let cur = e.find((o) => Number(o.serial) === Number(deliverOrder.serial)) ?? deliverOrder,
+            items = orderItems(cur),
+            remaining = items.filter((it) => it.stage !== `تم التسليم`),
+            toggle = (idx) =>
+              setDeliverSel((sel) =>
+                sel.includes(idx) ? sel.filter((s) => s !== idx) : [...sel, idx],
+              );
+          return (0, H.jsx)(`div`, {
+            className: `no-print fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-6`,
+            children: (0, H.jsxs)(`div`, {
+              dir: `rtl`,
+              className: `w-full max-w-lg rounded-xl border border-ink/60 bg-sheet p-4 text-ink`,
+              children: [
+                (0, H.jsxs)(`div`, {
+                  className: `mb-3 flex items-center justify-between`,
+                  children: [
+                    (0, H.jsx)(`h2`, {
+                      className: `text-[16px] font-bold`,
+                      children: `تسليم الفاتورة ${x(String(cur.serial))} — ${cur.name || ``}`,
+                    }),
+                    (0, H.jsx)(`button`, {
+                      type: `button`,
+                      "aria-label": `إغلاق`,
+                      onClick: () => setDeliverOrder(null),
+                      className: `text-ink`,
+                      children: (0, H.jsx)(v, { className: `h-5 w-5` }),
+                    }),
+                  ],
+                }),
+                (0, H.jsx)(`div`, {
+                  className: `mb-2 text-[12px] font-bold`,
+                  children: `الجاهزة: ${x(String(countReadyItems(cur)))} — المسلّمة: ${x(String(countDeliveredItems(cur)))} — غير الجاهزة: ${x(String(countPendingItems(cur)))}`,
+                }),
+                (0, H.jsx)(`div`, {
+                  className: `mb-3 flex flex-col gap-1`,
+                  children: items.map((it) =>
+                    (0, H.jsxs)(
+                      `label`,
+                      {
+                        className: `flex items-center justify-between gap-2 rounded-md border border-ink/40 px-2 py-1 text-[13px]`,
+                        children: [
+                          (0, H.jsxs)(`span`, {
+                            className: `flex items-center gap-2`,
+                            children: [
+                              (0, H.jsx)(`input`, {
+                                type: `checkbox`,
+                                disabled: it.stage === `تم التسليم`,
+                                checked:
+                                  it.stage === `تم التسليم` || deliverSel.includes(it.idx),
+                                onChange: () => toggle(it.idx),
+                                "aria-label": `ثوب ${it.idx}`,
+                              }),
+                              `ثوب رقم ${x(String(it.idx))}`,
+                            ],
+                          }),
+                          (0, H.jsx)(`span`, { className: `font-bold`, children: it.stage }),
+                        ],
+                      },
+                      it.idx,
+                    ),
+                  ),
+                }),
+                (0, H.jsxs)(`div`, {
+                  className: `flex flex-wrap gap-2`,
+                  children: [
+                    (0, H.jsx)(`button`, {
+                      type: `button`,
+                      disabled: !remaining.length,
+                      onClick: () => {
+                        (deliverItems(cur, remaining.map((it) => it.idx)), setDeliverOrder(null));
+                      },
+                      className: `rounded-md bg-ink px-3 py-2 text-[13px] font-bold text-sheet disabled:opacity-50`,
+                      children: `تسليم الطلب كاملاً`,
+                    }),
+                    (0, H.jsx)(`button`, {
+                      type: `button`,
+                      disabled: !deliverSel.length,
+                      onClick: () => {
+                        (deliverItems(cur, deliverSel), setDeliverSel([]), setDeliverOrder(null));
+                      },
+                      className: `rounded-md border border-ink/60 px-3 py-2 text-[13px] font-bold text-ink hover:bg-ink/10 disabled:opacity-50`,
+                      children: `تسليم الثياب المحددة`,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          });
+        })(),
+
       f &&
         (0, H.jsx)(`div`, {
           className: `no-print fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-6`,
