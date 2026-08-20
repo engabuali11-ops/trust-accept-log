@@ -3938,7 +3938,128 @@ function fe() {
                   }),
                 ],
               }),
+              // ملخص لحظي عام لعدد الثياب الجاهزة وغير الجاهزة والمسلّمة
+              (0, H.jsx)(`div`, {
+                className: `mt-4 grid grid-cols-4 gap-2`,
+                children: [
+                  { label: `إجمالي الثياب`, value: boardTotals.total },
+                  { label: `جاهزة للتسليم`, value: boardTotals.ready },
+                  { label: `غير جاهزة`, value: boardTotals.pending },
+                  { label: `تم تسليمها`, value: boardTotals.delivered },
+                ].map((s) =>
+                  (0, H.jsxs)(
+                    `div`,
+                    {
+                      className: `rounded-lg border border-ink/50 p-2 text-center text-ink`,
+                      children: [
+                        (0, H.jsx)(`div`, { className: `text-[12px] font-bold`, children: s.label }),
+                        (0, H.jsx)(`div`, {
+                          className: `text-[16px] font-bold`,
+                          children: x(String(s.value)),
+                        }),
+                      ],
+                    },
+                    s.label,
+                  ),
+                ),
+              }),
+              (0, H.jsx)(`h3`, {
+                className: `mt-4 mb-2 text-[14px] font-bold text-ink`,
+                children: `تفاصيل الثياب (فاتورة / تسلسل الثوب)`,
+              }),
+              (0, H.jsxs)(`table`, {
+                className: `w-full border-collapse text-center text-[12px] text-ink`,
+                children: [
+                  (0, H.jsx)(`thead`, {
+                    children: (0, H.jsx)(`tr`, {
+                      className: `bg-ink/10`,
+                      children: [
+                        `رقم الفاتورة`,
+                        `تسلسل الثوب`,
+                        `اسم العميل`,
+                        `الخياط المسؤول`,
+                        `حالة الثوب`,
+                        `تسليم`,
+                      ].map((h3) =>
+                        (0, H.jsx)(
+                          `th`,
+                          { className: `border border-ink/40 p-2`, children: h3 },
+                          h3,
+                        ),
+                      ),
+                    }),
+                  }),
+                  (0, H.jsxs)(`tbody`, {
+                    children: [
+                      ...boardItems.map((it) =>
+                        (0, H.jsxs)(
+                          `tr`,
+                          {
+                            className: it.stage === `تم التسليم` ? `bg-ink/5` : ``,
+                            children: [
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2 font-bold`,
+                                children: x(String(it.serial)),
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: x(String(it.idx)),
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: it.client,
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: it.tailorName,
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-1`,
+                                children: (0, H.jsx)(`select`, {
+                                  value: it.stage,
+                                  "aria-label": `حالة الثوب ${it.idx} للفاتورة ${it.serial}`,
+                                  onChange: (ev) =>
+                                    setItemStage(it.order, it.idx, ev.target.value),
+                                  className: `h-8 w-full rounded-md border border-ink/60 bg-transparent px-1 text-[12px] text-ink outline-none`,
+                                  children: ITEM_STAGES.map((s) =>
+                                    (0, H.jsx)(`option`, { value: s, children: s }, s),
+                                  ),
+                                }),
+                              }),
+                              (0, H.jsx)(`td`, {
+                                className: `border border-ink/40 p-1`,
+                                children:
+                                  it.stage === `تم التسليم`
+                                    ? (0, H.jsx)(`span`, {
+                                        className: `text-[12px] font-bold`,
+                                        children: `تم التسليم`,
+                                      })
+                                    : (0, H.jsx)(`button`, {
+                                        type: `button`,
+                                        onClick: () => deliverItems(it.order, [it.idx]),
+                                        className: `rounded-md bg-ink px-2 py-1 text-[12px] font-bold text-sheet`,
+                                        children: `تسليم الثوب`,
+                                      }),
+                              }),
+                            ],
+                          },
+                          it.key,
+                        ),
+                      ),
+                      boardItems.length === 0 &&
+                        (0, H.jsx)(`tr`, {
+                          children: (0, H.jsx)(`td`, {
+                            colSpan: 6,
+                            className: `border border-ink/40 p-4`,
+                            children: `لا توجد ثياب مطابقة`,
+                          }),
+                        }),
+                    ],
+                  }),
+                ],
+              }),
             ],
+
           }),
         }),
       f &&
