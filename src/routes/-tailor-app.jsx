@@ -3407,6 +3407,11 @@ function fe() {
                           className: `border border-ink/40 p-2`,
                           children: `كرت العميل`,
                         }),
+                        (0, H.jsx)(`th`, {
+                          className: `border border-ink/40 p-2`,
+                          children: `التسليم للعميل`,
+                        }),
+
                       ],
                     }),
                   }),
