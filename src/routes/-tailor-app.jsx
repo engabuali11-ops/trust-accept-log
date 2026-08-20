@@ -2731,6 +2731,66 @@ function fe() {
           : tailorStats,
       [tailorStats, boardSerialQuery, e],
     ),
+    // كل ثوب مرتبط آلياً برقم الفاتورة + تسلسل الثوب + العميل + الخياط
+    boardItems = (0, u.useMemo)(() => {
+      let list = boardSerialQuery
+        ? e.filter((o) => String(o.serial).includes(boardSerialQuery))
+        : e;
+      return [...list]
+        .sort((a, b) => a.serial - b.serial)
+        .flatMap((o) => {
+          let tl = findTailor(settings, o.tailorId);
+          return orderItems(o).map((it) => ({
+            key: `${o.serial}-${it.idx}`,
+            serial: o.serial,
+            idx: it.idx,
+            stage: it.stage,
+            client: o.name || `—`,
+            tailorName: tl?.name || `— غير محدد —`,
+            order: o,
+          }));
+        });
+    }, [e, settings, boardSerialQuery]),
+    boardTotals = (0, u.useMemo)(
+      () => ({
+        total: boardItems.length,
+        ready: boardItems.filter((it) => it.stage === `جاهز`).length,
+        delivered: boardItems.filter((it) => it.stage === `تم التسليم`).length,
+        pending: boardItems.filter((it) => !isReadyStage(it.stage)).length,
+      }),
+      [boardItems],
+    ),
+    // حفظ فوري (محلي + سحابي) لأي تعديل على ثياب فاتورة
+    applyOrder = (next) => {
+      let list = B(),
+        idx = list.findIndex((o) => Number(o.serial) === Number(next.serial));
+      (idx >= 0 ? (list[idx] = next) : list.push(next), D(list));
+      if (Number(n.serial) === Number(next.serial)) i(next);
+      pushCloudOrder(next).catch((err) => {
+        (queueCloudWrite({ kind: `order`, order: next }),
+          console.error(`cloud item save failed`, err));
+      });
+    },
+    setItemStage = (order, idx, stage) => {
+      let items = orderItems(order).map((it) => (it.idx === idx ? { ...it, stage } : it));
+      (applyOrder(withItems(order, items)),
+        r.success(`ثوب ${x(String(idx))} — فاتورة ${x(String(order.serial))}: ${stage}`));
+    },
+    deliverItems = (order, idxs) => {
+      let picked = idxs && idxs.length ? idxs : orderItems(order).map((it) => it.idx);
+      if (!picked.length) {
+        r.error(`اختر ثوباً واحداً على الأقل`);
+        return;
+      }
+      let items = orderItems(order).map((it) =>
+        picked.includes(it.idx) ? { ...it, stage: `تم التسليم` } : it,
+      );
+      (applyOrder(withItems(order, items)),
+        r.success(
+          `تم تسليم ${x(String(picked.length))} ثوب من الفاتورة ${x(String(order.serial))}`,
+        ));
+    },
+
     filteredOrders = (0, u.useMemo)(() => {
       let e = S2(query).trim().toLowerCase();
       return e
