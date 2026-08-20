@@ -663,12 +663,65 @@ function k(e) {
   return !!e && e !== `بدون`;
 }
 // تفصيل آلي: [{ serial, count }] مرتبطة برقم الفاتورة/التسلسل
-function buildBreak(list) {
+function buildBreak(list, counter) {
   return (list ?? [])
-    .map((o) => ({ serial: o.serial, count: Number(o.count) || 0 }))
+    .map((o) => ({
+      serial: o.serial,
+      count: counter ? counter(o) : Number(o.count) || 0,
+    }))
     .filter((r) => r.count > 0)
     .sort((a, b) => a.serial - b.serial);
 }
+/* ============ متابعة ذكية على مستوى كل ثوب داخل الفاتورة ============ */
+var ITEM_STAGES = [`قيد القص`, `قيد الخياطة`, `قيد التطريز`, `قيد الكوي`, `جاهز`, `تم التسليم`];
+function defaultStageFor(status) {
+  return status === `تم التسليم`
+    ? `تم التسليم`
+    : status === `جاهز`
+      ? `جاهز`
+      : status === `قيد التنفيذ`
+        ? `قيد الخياطة`
+        : `قيد القص`;
+}
+/** ثياب الفاتورة مرتبطة آلياً برقم الفاتورة وتسلسل الثوب. */
+function orderItems(o) {
+  let count = Math.max(1, Number(C(o?.count)) || 0),
+    saved = Array.isArray(o?.items) ? o.items : [],
+    def = defaultStageFor(o?.status);
+  return Array.from({ length: count }, (_, i) => {
+    let s = saved[i],
+      stage = s && ITEM_STAGES.includes(s.stage) ? s.stage : def;
+    return { idx: i + 1, stage };
+  });
+}
+function isReadyStage(s) {
+  return s === `جاهز` || s === `تم التسليم`;
+}
+function countReadyItems(o) {
+  return orderItems(o).filter((it) => isReadyStage(it.stage)).length;
+}
+function countDeliveredItems(o) {
+  return orderItems(o).filter((it) => it.stage === `تم التسليم`).length;
+}
+function countPendingItems(o) {
+  return orderItems(o).filter((it) => !isReadyStage(it.stage)).length;
+}
+/** حالة الفاتورة تُشتق آلياً من حالات ثيابها. */
+function statusFromItems(items, prev) {
+  if (!items.length) return prev;
+  if (prev === `ملغي`) return prev;
+  if (items.every((it) => it.stage === `تم التسليم`)) return `تم التسليم`;
+  if (items.every((it) => isReadyStage(it.stage))) return `جاهز`;
+  return `قيد التنفيذ`;
+}
+function withItems(o, items) {
+  return {
+    ...o,
+    items: items.map((it) => ({ idx: it.idx, stage: it.stage })),
+    status: statusFromItems(items, o.status),
+  };
+}
+
 // محدد الكسر الذكي: اختيار الكسر، والضغط على نفس الكسر يلغيه (بدون كلمة «بدون»)
 function FracSelect({ value: val, onChange, className: cls = ``, ariaLabel = `الكسر`, disabled }) {
   let [open, setOpen] = React.useState(!1),
