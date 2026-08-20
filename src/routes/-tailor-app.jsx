@@ -2684,20 +2684,20 @@ function fe() {
       () =>
         getTailors(settings).map((tl) => {
           let own = e.filter((o) => o.tailorId === tl.id),
-            total = own.reduce((a, o) => a + (C(o.count) || 0), 0),
-            readyOrders = own.filter((o) => o.status === `جاهز` || isDelivered(o)),
-            pendingOrders = own.filter((o) => !(o.status === `جاهز` || isDelivered(o))),
-            ready = readyOrders.reduce((a, o) => a + (C(o.count) || 0), 0);
+            total = own.reduce((a, o) => a + orderItems(o).length, 0),
+            ready = own.reduce((a, o) => a + countReadyItems(o), 0),
+            delivered = own.reduce((a, o) => a + countDeliveredItems(o), 0);
           return {
             id: tl.id,
             name: tl.name || `بدون اسم`,
             phone: tl.whatsapp || tl.phone || ``,
             serials: own.map((o) => o.serial).sort((a, b) => a - b),
             // تفصيل ذكي وآلي: كل رقم فاتورة/تسلسل مع عدد ثيابه (جاهزة / غير جاهزة)
-            readyBreak: buildBreak(readyOrders),
-            pendingBreak: buildBreak(pendingOrders),
+            readyBreak: buildBreak(own, countReadyItems),
+            pendingBreak: buildBreak(own, countPendingItems),
             total,
             ready,
+            delivered,
             pending: Math.max(0, total - ready),
           };
         }),
@@ -2712,23 +2712,22 @@ function fe() {
               .map((st) => {
                 // عدد الثياب الخاص برقم الطلب المطلوب فقط
                 let matched = st.serials.filter((sn) => String(sn).includes(boardSerialQuery)),
-                  own = e.filter(
-                    (o) => o.tailorId === st.id && matched.includes(o.serial),
-                  ),
-                  total = own.reduce((a, o) => a + (C(o.count) || 0), 0),
-                  readyOrders = own.filter((o) => o.status === `جاهز` || isDelivered(o)),
-                  pendingOrders = own.filter((o) => !(o.status === `جاهز` || isDelivered(o))),
-                  ready = readyOrders.reduce((a, o) => a + (C(o.count) || 0), 0);
+                  own = e.filter((o) => o.tailorId === st.id && matched.includes(o.serial)),
+                  total = own.reduce((a, o) => a + orderItems(o).length, 0),
+                  ready = own.reduce((a, o) => a + countReadyItems(o), 0),
+                  delivered = own.reduce((a, o) => a + countDeliveredItems(o), 0);
                 return {
                   ...st,
                   serials: matched,
-                  readyBreak: buildBreak(readyOrders),
-                  pendingBreak: buildBreak(pendingOrders),
+                  readyBreak: buildBreak(own, countReadyItems),
+                  pendingBreak: buildBreak(own, countPendingItems),
                   total,
                   ready,
+                  delivered,
                   pending: Math.max(0, total - ready),
                 };
               })
+
           : tailorStats,
       [tailorStats, boardSerialQuery, e],
     ),
