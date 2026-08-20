@@ -2677,10 +2677,11 @@ function fe() {
       const encodedText = encodeURIComponent(messageText);
       const waUrl = `https://wa.me/${num}?text=${encodedText}`;
       const webUrl = `https://web.whatsapp.com/send?phone=${num}&text=${encodedText}`;
-      const opened = window.open(waUrl, `_blank`);
+      const opened = window.open(waUrl, `_blank`, `noopener,noreferrer`);
       if (!opened) {
-        window.open(webUrl, `_blank`);
+        window.open(webUrl, `_blank`, `noopener,noreferrer`);
       }
+
     },
     N = (0, u.useMemo)(() => [...e].sort((e, t) => e.serial - t.serial), [e]),
     tailorStats = (0, u.useMemo)(
@@ -2833,8 +2834,9 @@ function fe() {
 `);
       const cardUrl = `https://wa.me/${t}?text=${encodeURIComponent(a)}`;
       const cardWebUrl = `https://web.whatsapp.com/send?phone=${t}&text=${encodeURIComponent(a)}`;
-      const cardOpened = window.open(cardUrl, `_blank`);
-      if (!cardOpened) window.open(cardWebUrl, `_blank`);
+      const cardOpened = window.open(cardUrl, `_blank`, `noopener,noreferrer`);
+      if (!cardOpened) window.open(cardWebUrl, `_blank`, `noopener,noreferrer`);
+
     },
     sendGreetings = (occasion) => {
       let seen = new Set(),
@@ -2854,8 +2856,9 @@ function fe() {
                 );
                 const greetingUrl = `https://wa.me/${tg.num}?text=${encodeURIComponent(greetingMessage)}`;
                 const greetingWebUrl = `https://web.whatsapp.com/send?phone=${tg.num}&text=${encodeURIComponent(greetingMessage)}`;
-                const opened = window.open(greetingUrl, `_blank`);
-                if (!opened) window.open(greetingWebUrl, `_blank`);
+                const opened = window.open(greetingUrl, `_blank`, `noopener,noreferrer`);
+                if (!opened) window.open(greetingWebUrl, `_blank`, `noopener,noreferrer`);
+
               }, idx * 600);
             }),
             setGreetingsOpen(!1),
