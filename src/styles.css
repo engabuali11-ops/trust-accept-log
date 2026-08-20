@@ -59,6 +59,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-ink: var(--ink);
+  --color-sheet: var(--sheet);
+  --color-app: var(--app);
 }
 
 :root {
@@ -95,6 +98,10 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --destructive: oklch(52% 0.2 27);
+  --ink: oklch(34% 0.075 165);
+  --sheet: oklch(98.5% 0.004 95);
+  --app: oklch(95.5% 0.008 95);
 }
 
 .dark {
@@ -140,5 +147,751 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+
+  .print-only {
+    display: none;
+  }
+}
+
+@utility font-arabic {
+  font-family: Cairo, Tajawal, system-ui, sans-serif;
+}
+
+/* ====== توحيد ألوان مخططات (الجبزور / الموديل / الكتف) ====== */
+.diagram-ink {
+  filter: saturate(0) contrast(1.08) brightness(0.98);
+  mix-blend-mode: multiply;
+  background: transparent;
+}
+
+/* ====== عرض الجوال والتابلت: نفس تنسيق الكمبيوتر بدون قص أو كسر ====== */
+.app-screen {
+  zoom: var(--app-zoom, 1);
+}
+
+@media (max-width: 1439px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+  .app-screen {
+    width: var(--app-base-width, 1440px);
+    max-width: none;
+  }
+}
+
+
+
+/* ====== محاذاة متطابقة 1:1 بين قائمة المقاسات وقائمة الملاحظات (٨ مقابل ٨) ====== */
+:root {
+  --sheet-row-h: 34px;
+  --sheet-head-h: 26px;
+}
+.ms-row,
+.ns-row {
+  height: var(--sheet-row-h);
+  min-height: var(--sheet-row-h);
+  max-height: var(--sheet-row-h);
+  box-sizing: border-box;
+}
+.ms-row > td {
+  height: var(--sheet-row-h);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+}
+.ms-row > td input,
+.ms-row > td select,
+.ms-row > td button,
+.ms-row > td .print-field {
+  height: 26px !important;
+  line-height: 24px !important;
+}
+
+/* ====== منع تداخل الخلايا وثبات التنسيق داخل قائمة الملاحظات والمقاسات ====== */
+.ns-row,
+.ns-row *,
+.ms-row > td,
+.ms-row > td * {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+.ns-row,
+.ns-row > div {
+  min-width: 0;
+  overflow: visible;
+}
+/* ====== توسيع قائمة الملاحظات: عرض كامل وقراءة واضحة بدون قص ====== */
+.notes-panel .ns-row {
+  width: 100% !important;
+  min-width: max-content;
+  padding: 4px 6px;
+}
+.notes-panel .ns-row > div {
+  width: 100% !important;
+}
+.ns-row input,
+.ns-row select,
+.ms-row > td input,
+.ms-row > td select {
+  min-width: 0;
+  padding: 2px 4px;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+.notes-panel .ns-row input,
+.notes-panel .ns-row select {
+  padding: 0 6px;
+  text-overflow: clip;
+  overflow: visible;
+  text-align: center;
+}
+.ns-row span,
+.ms-row > td span {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* ====== ضبط خلية «العرض»: احتواء كامل داخل حدود قائمة الملاحظات ====== */
+.notes-panel .width-note-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.notes-panel .width-note-row > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.notes-panel .width-note-row .print-width-note {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 2px 4px !important;
+  font-size: 0.85rem !important;
+}
+.notes-panel .width-note-select {
+  flex: 0 0 24px !important;
+  width: 24px !important;
+  max-width: 24px !important;
+  padding: 1px 3px !important;
+  font-size: 0.82rem !important;
+  box-sizing: border-box !important;
+  text-align: center;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+}
+.notes-panel .width-note-row .print-width-note {
+  font-size: 0.82rem !important;
+  padding: 1px 3px !important;
+}
+/* احتواء صارم لخلية «العرض» ومنع أي تجاوز أفقي */
+.notes-panel .ns-row:has(> .width-note-row) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.notes-panel .width-note-select {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 0 0 22px !important;
+  width: 22px !important;
+  max-width: 22px !important;
+  min-width: 0 !important;
+  font-size: 0.8rem !important;
+  padding: 1px 3px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.notes-panel .width-note-row .print-width-note {
+  width: 100% !important;
+  max-width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 1px 3px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* ====== محاذاة رأسية 1:1: أول صف ملاحظات يقابل أول صف مقاسات ====== */
+/* رأس جدول المقاسات ورأس الملاحظات بارتفاع واحد مقفول */
+table:has(.ms-row) thead tr,
+table:has(.ms-row) thead th {
+  height: var(--sheet-head-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+.notes-panel div:has(> .ns-row) {
+  padding-top: 0 !important;
+  box-sizing: border-box !important;
+}
+.notes-panel .notes-head {
+  height: var(--sheet-head-h) !important;
+  line-height: var(--sheet-head-h) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+/* شبكة صفوف مقفولة: ٨ صفوف متساوية في المقاسات والملاحظات */
+.notes-panel .notes-rows {
+  display: grid !important;
+  grid-template-rows: var(--sheet-head-h) repeat(8, var(--sheet-row-h)) !important;
+  align-items: stretch !important;
+}
+.notes-panel .notes-rows > .ns-row {
+  height: var(--sheet-row-h) !important;
+  min-height: var(--sheet-row-h) !important;
+  max-height: var(--sheet-row-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+
+
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0 !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+    width: 297mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .app-screen {
+    display: none !important;
+  }
+  /* لا تُطبع أي حاوية لا تحتوي قالب طباعة (تمنع ظهور صفحة فارغة قبل التقرير) */
+  body > *:not(.print-only):not(script):not(style):not(:has(.print-only)) {
+    display: none !important;
+  }
+  /* الحاوية التي تضم قالب الطباعة: بلا ارتفاع شاشة أو خلفية */
+  body > *:has(.print-only) {
+    min-height: 0 !important;
+    height: auto !important;
+    background: #fff !important;
+    display: block !important;
+  }
+
+
+  /* اتجاه RTL ثابت عند الطباعة/PDF على الجوال والكمبيوتر بدون أي انعكاس */
+  .print-only,
+  .print-only .print-template,
+  .print-report-sheet,
+  .print-report-table {
+    direction: rtl !important;
+    text-align: right !important;
+    unicode-bidi: isolate !important;
+  }
+  .print-only {
+    display: block !important;
+    zoom: 1 !important;
+    width: 297mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .print-only:has(.print-template.print-tailor),
+  .print-only:has(.print-template.print-client) {
+    position: relative !important;
+  }
+  /* اسم النسخة في وسط أعلى الصفحة باللون الأحمر */
+  .print-only:has(.print-template.print-tailor) .print-title,
+  .print-only:has(.print-template.print-client) .print-title {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    padding: 0.5mm 2mm !important;
+    width: fit-content !important;
+    text-align: center !important;
+    color: #dc2626 !important;
+    height: auto !important;
+    line-height: 1.15 !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    z-index: 20 !important;
+  }
+
+  .print-title {
+    text-align: center !important;
+    color: var(--ink) !important;
+    letter-spacing: 0.5px !important;
+    margin: 1mm 0 0 !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+  }
+  /* اسم العميل في وسط أعلى الصفحة باللون الأحمر بدون أي إزاحة للتنسيق */
+  .print-only:has(.print-template.print-tailor) .print-client-name,
+  .print-only:has(.print-template.print-client) .print-client-name {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    padding: 0.5mm 2mm !important;
+    width: fit-content !important;
+    max-width: 60% !important;
+    text-align: center !important;
+    color: #dc2626 !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    z-index: 20 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-template {
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  /* نسخة الخياط ونسخة العميل: صفحة واحدة كاملة بدون هوامش وبدون أي اقتصاص */
+  .print-only:has(.print-template.print-tailor),
+  .print-only:has(.print-template.print-client) {
+    height: 210mm !important;
+    max-height: 210mm !important;
+    overflow: hidden !important;
+  }
+  .print-template.print-tailor {
+    zoom: 0.9 !important;
+    width: 1180px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  .print-template.print-tailor img,
+  .print-template.print-tailor svg,
+  .print-template.print-client img,
+  .print-template.print-client svg {
+    max-width: 100% !important;
+    object-fit: contain !important;
+    overflow: visible !important;
+    break-inside: avoid !important;
+  }
+  .print-template.print-tailor *,
+  .print-template.print-client * {
+    overflow: visible !important;
+  }
+  .print-template.print-client {
+    zoom: 0.75 !important;
+    width: 1436px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+
+
+
+  .print-field {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  /* اسم العميل كامل بدون قطع في نسخة الخياط ونسخة العميل */
+  .print-only:has(.print-template.print-tailor) .print-client-name,
+  .print-only:has(.print-template.print-client) .print-client-name {
+    max-width: 92% !important;
+  }
+  /* منع تراكب نص الملاحظات مثل «توسيع الورك» */
+  .print-template .print-note,
+  .print-template .print-width-note {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    letter-spacing: 0 !important;
+  }
+  .print-template .print-width-note {
+    font-size: 11px !important;
+    padding-inline: 2px !important;
+  }
+  /* توسيع خانة «٢ طـ بلاستيك» لتظهر كاملة دون كسر الشبكة */
+  .print-template .print-spec-cell {
+    width: 92px !important;
+    min-width: 92px !important;
+    flex: 0 0 92px !important;
+    font-size: 11px !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+  /* خانات الكسور (١/٤ ، ١/٢ ، ٣/٤) تظهر كاملة بدون قص */
+  .print-template .print-frac-cell {
+    width: 38px !important;
+    min-width: 38px !important;
+    flex: 0 0 38px !important;
+    font-size: 11px !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+  .print-template .print-suffix {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+  }
+  .print-template label,
+  .print-template .text-ink {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+
+  /* ============ التقارير (اليومي / الشهري) ============ */
+  .print-report-sheet {
+    width: 297mm !important;
+    padding: 6mm 8mm !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  .print-report-stats {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 3mm !important;
+    margin: 3mm 0 4mm !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-report-stat {
+    border: 1px solid var(--ink) !important;
+    border-radius: 2mm !important;
+    padding: 2mm 4mm !important;
+    min-width: 40mm !important;
+    text-align: center !important;
+    color: var(--ink) !important;
+    font-size: 13px !important;
+    break-inside: avoid !important;
+  }
+  .print-report-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    overflow: visible !important;
+    color: var(--ink) !important;
+  }
+  .print-report-table thead {
+    display: table-header-group !important;
+  }
+  .print-report-table tfoot {
+    display: table-footer-group !important;
+  }
+  .print-report-table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-report-table th,
+  .print-report-table td {
+    border: 1px solid var(--ink) !important;
+    padding: 1.6mm 1mm !important;
+    font-size: 12px !important;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ====== ثبات اتجاه الطباعة/PDF: منع أي انعكاس أو تدوير للمحاور ====== */
+  html,
+  body,
+  .print-only,
+  .print-only * {
+    direction: rtl !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    transform: none !important;
+    rotate: none !important;
+  }
+  .print-only,
+  .print-only .print-template,
+  .print-report-sheet,
+  .print-report-table,
+  .print-report-table tr,
+  .print-report-table th,
+  .print-report-table td {
+    unicode-bidi: isolate !important;
+  }
+  /* التقارير اليومية/الشهرية والطلبات: A4 عمودي (يُفرض عبر @page المحقون وقت الطباعة).
+     ملاحظة: عدم استخدام صفحة مُسمّاة (page: report) لأنها تُنتج صفحة فارغة قبل التقرير. */
+  .print-report-sheet {
+    width: 100% !important;
+
+    max-width: 198mm !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    align-self: center !important;
+    /* تصغير تلقائي ليطبع التقرير في صفحة A4 واحدة بدون انقسام */
+    zoom: var(--report-print-zoom, 1) !important;
+    max-height: 285mm !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+  .print-only:has(.print-report-sheet),
+  .print-only.print-report-sheet {
+    width: 100% !important;
+    max-width: 198mm !important;
+    margin: 0 auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+  html:has(.print-report-sheet),
+  body:has(.print-report-sheet) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  body:has(.print-report-sheet) > *:has(.print-only) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+
+  /* ====== إظهار إجباري لكل عناصر التقرير عند الطباعة/PDF ====== */
+  .print-only:has(.print-report-sheet),
+  .print-only.print-report-sheet,
+  .print-report-sheet,
+  .print-report-sheet * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .print-report-sheet .print-title,
+  .print-report-sheet .print-report-stats,
+  .print-report-sheet .print-report-stat,
+  .print-report-sheet header,
+  .print-report-sheet .report-header {
+    display: block !important;
+  }
+  .print-report-sheet .print-report-stats {
+    display: flex !important;
+  }
+  .print-report-sheet table,
+  .print-report-table {
+    display: table !important;
+  }
+  .print-report-table thead,
+  .print-report-sheet thead {
+    display: table-header-group !important;
+  }
+  .print-report-table tbody,
+  .print-report-sheet tbody {
+    display: table-row-group !important;
+  }
+  .print-report-table tfoot,
+  .print-report-sheet tfoot {
+    display: table-footer-group !important;
+  }
+  .print-report-table tr,
+  .print-report-sheet tr {
+    display: table-row !important;
+  }
+  .print-report-table th,
+  .print-report-table td,
+  .print-report-sheet th,
+  .print-report-sheet td {
+    display: table-cell !important;
+  }
+
+  .print-report-stats,
+  .print-report-table,
+  .print-report-sheet * {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-report-table th,
+  .print-report-table td {
+    text-align: right !important;
+  }
+  /* محاذاة الصفوف ١:١ عند الطباعة أيضاً */
+  .ms-row,
+  .ns-row {
+    height: var(--sheet-row-h) !important;
+    min-height: var(--sheet-row-h) !important;
+    max-height: var(--sheet-row-h) !important;
+  }
+  .ms-row > td {
+    height: var(--sheet-row-h) !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  table:has(.ms-row) thead tr,
+  table:has(.ms-row) thead th {
+    height: var(--sheet-head-h) !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .notes-panel div:has(> .ns-row) {
+    padding-top: 0 !important;
+  }
+  .notes-panel .notes-head {
+    height: var(--sheet-head-h) !important;
+    line-height: var(--sheet-head-h) !important;
+    margin: 0 !important;
+  }
+  .notes-panel .notes-rows {
+    display: grid !important;
+    grid-template-rows: var(--sheet-head-h) repeat(8, var(--sheet-row-h)) !important;
+    align-items: stretch !important;
+  }
+  .notes-panel .notes-rows > .ns-row {
+    height: var(--sheet-row-h) !important;
+    min-height: var(--sheet-row-h) !important;
+    max-height: var(--sheet-row-h) !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* احتواء صارم لصف «الطول من الوراء» داخل حدود جدول الملاحظات */
+.notes-panel .ns-row:has(> .len-note-row) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.notes-panel .len-note-row {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.notes-panel .len-note-row > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.notes-panel .len-note-row > select,
+.notes-panel .len-note-row > .print-field {
+  flex: 0 0 auto !important;
+  width: 56px !important;
+  max-width: 56px !important;
+  padding: 1px 3px !important;
+  font-size: 0.8rem !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.notes-panel .len-note-row > input,
+.notes-panel .len-note-row > div:not(.print-field) {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ====== مزامنة رأسية 1:1 بين صفوف المقاسات وصفوف الملاحظات ====== */
+.notes-panel .notes-rows {
+  margin-top: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.notes-panel .notes-head {
+  margin-bottom: 0 !important;
+  height: 8px !important;
+  line-height: 8px !important;
+  overflow: visible !important;
+}
+.notes-panel .ns-row > * {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ====== ضبط نهائي: تطابق تام بين قائمة المقاسات وقائمة الملاحظات ====== */
+.notes-panel,
+.notes-panel > * {
+  margin-top: 0 !important;
+}
+table:has(.ms-row) {
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  margin: 0 !important;
+}
+table:has(.ms-row) tbody .ms-row:first-child > td,
+.notes-panel .notes-rows > .ns-row:first-of-type {
+  margin-top: 0 !important;
+}
+.notes-panel .ns-row,
+.ms-row > td {
+  vertical-align: middle !important;
+}
+
+/* قائمة «الخياط المسؤول» أسفل قائمة المقاسات (نسخة الخياط فقط) */
+.tailor-picker-box {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* تقليل الفجوة بين «الرقم الصحيح» و«الكسر» */
+.cuff-plain-fields {
+  gap: 2px !important;
+}
+.notes-panel .len-note-row,
+.notes-panel .width-note-row {
+  column-gap: 2px !important;
+}
+
+/* نهاية الحد السفلي لقائمة الملاحظات محاذية لنهاية حد قائمة المقاسات */
+.notes-panel {
+  align-self: flex-start !important;
+  height: 321px !important;
+  box-sizing: border-box !important;
+}
+/* تكبير قائمة الجيوب أفقيًا حتى الحد الأيمن لقائمة الملاحظات */
+.pockets-panel {
+  width: calc(100% + 198px) !important;
+  margin-right: -198px !important;
+  box-sizing: border-box !important;
+}
+
+@media print {
+  .tailor-picker-box {
+    display: block !important;
+    page-break-inside: avoid !important;
+    border: 1px solid var(--ink) !important;
+  }
+  .tailor-picker-box select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    border: 1px solid var(--ink) !important;
+    color: var(--ink) !important;
+  }
+  .print-template.print-client .tailor-picker-box {
+    display: none !important;
   }
 }
