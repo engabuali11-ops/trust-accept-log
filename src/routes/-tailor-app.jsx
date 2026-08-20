@@ -2340,6 +2340,9 @@ function fe() {
     [tailorOpen, setTailorOpen] = (0, u.useState)(!1),
     [tailorBoardOpen, setTailorBoardOpen] = (0, u.useState)(!1),
     [tailorBoardQuery, setTailorBoardQuery] = (0, u.useState)(``),
+    [deliverOrder, setDeliverOrder] = (0, u.useState)(null),
+    [deliverSel, setDeliverSel] = (0, u.useState)([]),
+
     [settings, setSettings] = (0, u.useState)(DEFAULT_SETTINGS);
   let currentSerialRef = (0, u.useRef)(0);
   (0, u.useEffect)(() => {
