@@ -3486,6 +3486,23 @@ function fe() {
                                   }),
                                 ],
                               }),
+                              (0, H.jsxs)(`td`, {
+                                className: `border border-ink/40 p-2`,
+                                children: [
+                                  (0, H.jsx)(`div`, {
+                                    className: `mb-1 text-[11px] font-bold`,
+                                    children: `${x(String(countDeliveredItems(e)))} / ${x(String(orderItems(e).length))}`,
+                                  }),
+                                  (0, H.jsx)(`button`, {
+                                    type: `button`,
+                                    onClick: () => {
+                                      (setDeliverOrder(e), setDeliverSel([]));
+                                    },
+                                    className: `rounded-md bg-ink px-3 py-1 text-[12px] font-bold text-sheet`,
+                                    children: `تسليم`,
+                                  }),
+                                ],
+                              }),
                             ],
                           },
                           e.serial,
@@ -3494,7 +3511,8 @@ function fe() {
                       filteredOrders.length === 0 &&
                         (0, H.jsx)(`tr`, {
                           children: (0, H.jsx)(`td`, {
-                            colSpan: 11,
+                            colSpan: 12,
+
                             className: `border border-ink/40 p-4`,
                             children: `لا توجد طلبات محفوظة`,
                           }),
