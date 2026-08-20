@@ -4085,6 +4085,98 @@ function fe() {
 
           }),
         }),
+      deliverOrder &&
+        (() => {
+          let cur = e.find((o) => Number(o.serial) === Number(deliverOrder.serial)) ?? deliverOrder,
+            items = orderItems(cur),
+            remaining = items.filter((it) => it.stage !== `تم التسليم`),
+            toggle = (idx) =>
+              setDeliverSel((sel) =>
+                sel.includes(idx) ? sel.filter((s) => s !== idx) : [...sel, idx],
+              );
+          return (0, H.jsx)(`div`, {
+            className: `no-print fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-6`,
+            children: (0, H.jsxs)(`div`, {
+              dir: `rtl`,
+              className: `w-full max-w-lg rounded-xl border border-ink/60 bg-sheet p-4 text-ink`,
+              children: [
+                (0, H.jsxs)(`div`, {
+                  className: `mb-3 flex items-center justify-between`,
+                  children: [
+                    (0, H.jsx)(`h2`, {
+                      className: `text-[16px] font-bold`,
+                      children: `تسليم الفاتورة ${x(String(cur.serial))} — ${cur.name || ``}`,
+                    }),
+                    (0, H.jsx)(`button`, {
+                      type: `button`,
+                      "aria-label": `إغلاق`,
+                      onClick: () => setDeliverOrder(null),
+                      className: `text-ink`,
+                      children: (0, H.jsx)(v, { className: `h-5 w-5` }),
+                    }),
+                  ],
+                }),
+                (0, H.jsx)(`div`, {
+                  className: `mb-2 text-[12px] font-bold`,
+                  children: `الجاهزة: ${x(String(countReadyItems(cur)))} — المسلّمة: ${x(String(countDeliveredItems(cur)))} — غير الجاهزة: ${x(String(countPendingItems(cur)))}`,
+                }),
+                (0, H.jsx)(`div`, {
+                  className: `mb-3 flex flex-col gap-1`,
+                  children: items.map((it) =>
+                    (0, H.jsxs)(
+                      `label`,
+                      {
+                        className: `flex items-center justify-between gap-2 rounded-md border border-ink/40 px-2 py-1 text-[13px]`,
+                        children: [
+                          (0, H.jsxs)(`span`, {
+                            className: `flex items-center gap-2`,
+                            children: [
+                              (0, H.jsx)(`input`, {
+                                type: `checkbox`,
+                                disabled: it.stage === `تم التسليم`,
+                                checked:
+                                  it.stage === `تم التسليم` || deliverSel.includes(it.idx),
+                                onChange: () => toggle(it.idx),
+                                "aria-label": `ثوب ${it.idx}`,
+                              }),
+                              `ثوب رقم ${x(String(it.idx))}`,
+                            ],
+                          }),
+                          (0, H.jsx)(`span`, { className: `font-bold`, children: it.stage }),
+                        ],
+                      },
+                      it.idx,
+                    ),
+                  ),
+                }),
+                (0, H.jsxs)(`div`, {
+                  className: `flex flex-wrap gap-2`,
+                  children: [
+                    (0, H.jsx)(`button`, {
+                      type: `button`,
+                      disabled: !remaining.length,
+                      onClick: () => {
+                        (deliverItems(cur, remaining.map((it) => it.idx)), setDeliverOrder(null));
+                      },
+                      className: `rounded-md bg-ink px-3 py-2 text-[13px] font-bold text-sheet disabled:opacity-50`,
+                      children: `تسليم الطلب كاملاً`,
+                    }),
+                    (0, H.jsx)(`button`, {
+                      type: `button`,
+                      disabled: !deliverSel.length,
+                      onClick: () => {
+                        (deliverItems(cur, deliverSel), setDeliverSel([]), setDeliverOrder(null));
+                      },
+                      className: `rounded-md border border-ink/60 px-3 py-2 text-[13px] font-bold text-ink hover:bg-ink/10 disabled:opacity-50`,
+                      children: `تسليم الثياب المحددة`,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          });
+        })(),
+
       f &&
         (0, H.jsx)(`div`, {
           className: `no-print fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-6`,
