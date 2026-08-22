@@ -722,8 +722,8 @@ function withItems(o, items) {
       status,
     };
   if (status === `تم التسليم`) {
-    // تاريخ التسليم/التحصيل الفعلي يُسجَّل آلياً ليدخل التقرير اليومي لذلك اليوم
-    if (!next.settledAt) next.settledAt = new Date().toISOString().slice(0, 10);
+    // تاريخ التسليم/التحصيل الفعلي: اليوم للطلبات الجارية، والتاريخ القديم للطلبات الأرشيفية
+    if (!next.settledAt) next.settledAt = settleStampDate(next);
     let rem = Math.max(0, C(next.orderValue) - (C(next.cash) + C(next.card)));
     if (!C(next.settleCash ?? ``) && !C(next.settleCard ?? ``) && rem > 0) {
       ((next.settleCash = x(String(Math.round(rem * 100) / 100))),
@@ -866,6 +866,7 @@ function R(e) {
     settleCash: ``,
     settleCard: ``,
     settledAt: ``,
+    isArchival: !1,
     paymentMethod: `none`,
 
     receiptDate: t,
@@ -2112,6 +2113,19 @@ var DELIVERED = `تم التسليم`,
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
+/** طلب أرشيفي/بأثر رجعي: إدخال قديم لا يجوز أن يدخل صندوق اليوم. */
+function isArchivalOrder(o) {
+  if (o?.isArchival === !0) return !0;
+  if (o?.isArchival === !1 && (o?.receiptDate ?? ``) >= todayISO()) return !1;
+  let d = (o?.deliveryDate ?? ``) || (o?.receiptDate ?? ``);
+  return !!(o?.receiptDate ?? ``) && (o?.receiptDate ?? ``) < todayISO() && !!d && d < todayISO();
+}
+/** تاريخ التحصيل الذي يُختم به التسليم (قديم للأرشيفي، اليوم لغيره). */
+function settleStampDate(o) {
+  return isArchivalOrder(o)
+    ? (o?.deliveryDate ?? ``) || (o?.receiptDate ?? ``) || todayISO()
+    : todayISO();
+}
 /** تاريخ التسليم/التحصيل الفعلي المرتبط بالفاتورة. */
 function settleDateOf(o) {
   return (o?.settledAt ?? ``) || (o?.deliveryDate ?? ``) || (o?.receiptDate ?? ``);
@@ -2123,27 +2137,34 @@ var settleCashOf = (o) => (isDelivered(o) ? C(o.settleCash ?? ``) : 0),
     isDelivered(o) &&
     settleCashOf(o) + settleCardOf(o) > 0 &&
     settleDateOf(o) !== (o?.receiptDate ?? ``),
+  /** التحصيل عند التسليم يُحتسب فقط إن لم يكن الطلب أرشيفياً بأثر رجعي على يوم اليوم. */
+  countsSettleOn = (o, day) =>
+    settleDateOf(o) === day && !(isArchivalOrder(o) && day === todayISO()),
   /** كاش/شبكة محصّل فعلياً في يوم محدد (فاتورة جديدة + تحصيل عند التسليم المؤجل). */
   dayCashOf = (o, day) =>
     ((o?.receiptDate ?? ``) === day ? C(o.cash) : 0) +
-    (settleDateOf(o) === day ? settleCashOf(o) : 0),
+    (countsSettleOn(o, day) ? settleCashOf(o) : 0),
   dayCardOf = (o, day) =>
     ((o?.receiptDate ?? ``) === day ? C(o.card) : 0) +
-    (settleDateOf(o) === day ? settleCardOf(o) : 0),
+    (countsSettleOn(o, day) ? settleCardOf(o) : 0),
   dayCollectedOf = (o, day) => dayCashOf(o, day) + dayCardOf(o, day),
-  /** الفواتير التي تدخل التقرير اليومي: فواتير اليوم + تسليمات محصّلة اليوم. */
+  /** الفواتير التي تدخل التقرير اليومي: فواتير اليوم + تسليمات محصّلة اليوم فعلياً. */
   ordersForDay = (list, day) =>
     (list ?? []).filter(
       (o) =>
         (o?.receiptDate ?? ``) === day ||
-        (isDelivered(o) && settleDateOf(o) === day && settleCashOf(o) + settleCardOf(o) > 0),
+        (isDelivered(o) &&
+          countsSettleOn(o, day) &&
+          settleCashOf(o) + settleCardOf(o) > 0),
     ),
   dayMovementLabel = (o, day) =>
     (o?.receiptDate ?? ``) === day
-      ? settleDateOf(o) === day && settleCashOf(o) + settleCardOf(o) > 0
+      ? countsSettleOn(o, day) && settleCashOf(o) + settleCardOf(o) > 0
         ? `فاتورة جديدة + تسليم`
         : `فاتورة جديدة`
-      : `تحصيل عند التسليم`,
+      : isArchivalOrder(o)
+        ? `تسليم أرشيفي (لا يدخل صندوق اليوم)`
+        : `تحصيل عند التسليم`,
   dayMethodLabel = (o, day) => {
     let c = dayCashOf(o, day),
       k2 = dayCardOf(o, day);
