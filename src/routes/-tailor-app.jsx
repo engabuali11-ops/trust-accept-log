@@ -2615,7 +2615,9 @@ function fe() {
         if (n.status === DELIVERED) {
           if (!n.settleCash) n.settleCash = z2;
           if (!n.settleCard) n.settleCard = z2;
-        }
+          // تسجيل تاريخ التحصيل الفعلي عند التسليم (قد يختلف عن تاريخ الفاتورة)
+          if (!n.settledAt) n.settledAt = new Date().toISOString().slice(0, 10);
+        } else n.settledAt = ``;
 
         return n;
 
