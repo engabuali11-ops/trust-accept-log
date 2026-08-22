@@ -2093,6 +2093,47 @@ var DELIVERED = `تم التسليم`,
     let t = baseRemaining(e);
     return t > 0 ? `${w(t)} - ${settleLabel(e)}` : settleLabel(e);
   };
+/* ===== معالجة مالية: التسليم في تاريخ مختلف عن تاريخ القبض ===== */
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+/** تاريخ التسليم/التحصيل الفعلي المرتبط بالفاتورة. */
+function settleDateOf(o) {
+  return (o?.settledAt ?? ``) || (o?.deliveryDate ?? ``) || (o?.receiptDate ?? ``);
+}
+var settleCashOf = (o) => (isDelivered(o) ? C(o.settleCash ?? ``) : 0),
+  settleCardOf = (o) => (isDelivered(o) ? C(o.settleCard ?? ``) : 0),
+  /** هل التحصيل عند التسليم تم في يوم غير يوم الفاتورة؟ */
+  isDeferredSettle = (o) =>
+    isDelivered(o) &&
+    settleCashOf(o) + settleCardOf(o) > 0 &&
+    settleDateOf(o) !== (o?.receiptDate ?? ``),
+  /** كاش/شبكة محصّل فعلياً في يوم محدد (فاتورة جديدة + تحصيل عند التسليم المؤجل). */
+  dayCashOf = (o, day) =>
+    ((o?.receiptDate ?? ``) === day ? C(o.cash) : 0) +
+    (settleDateOf(o) === day ? settleCashOf(o) : 0),
+  dayCardOf = (o, day) =>
+    ((o?.receiptDate ?? ``) === day ? C(o.card) : 0) +
+    (settleDateOf(o) === day ? settleCardOf(o) : 0),
+  dayCollectedOf = (o, day) => dayCashOf(o, day) + dayCardOf(o, day),
+  /** الفواتير التي تدخل التقرير اليومي: فواتير اليوم + تسليمات محصّلة اليوم. */
+  ordersForDay = (list, day) =>
+    (list ?? []).filter(
+      (o) =>
+        (o?.receiptDate ?? ``) === day ||
+        (isDelivered(o) && settleDateOf(o) === day && settleCashOf(o) + settleCardOf(o) > 0),
+    ),
+  dayMovementLabel = (o, day) =>
+    (o?.receiptDate ?? ``) === day
+      ? settleDateOf(o) === day && settleCashOf(o) + settleCardOf(o) > 0
+        ? `فاتورة جديدة + تسليم`
+        : `فاتورة جديدة`
+      : `تحصيل عند التسليم`,
+  dayMethodLabel = (o, day) => {
+    let c = dayCashOf(o, day),
+      k2 = dayCardOf(o, day);
+    return c > 0 && k2 > 0 ? `كاش + شبكة` : k2 > 0 ? `شبكة` : c > 0 ? `كاش` : `آجل`;
+  };
 
 function Z(e) {
   let t = e.reduce((e, t) => e + X(t), 0),
