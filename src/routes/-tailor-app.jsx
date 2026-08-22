@@ -2296,7 +2296,7 @@ function monthlyReport(e) {
 function de(e, t) {
   let n = new Date().toISOString().slice(0, 10),
     r = n.slice(0, 7);
-  if (e.includes(`اليومي`)) return ue(t.filter((e) => e.receiptDate === n));
+  if (e.includes(`اليومي`)) return ue(ordersForDay(t, n), n);
   if (e.includes(`الشهري`))
     return monthlyReport(t.filter((e) => (e.receiptDate ?? ``).startsWith(r)));
   if (e.includes(`العملاء`)) {
