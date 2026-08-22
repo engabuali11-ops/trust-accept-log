@@ -715,11 +715,25 @@ function statusFromItems(items, prev) {
   return `قيد التنفيذ`;
 }
 function withItems(o, items) {
-  return {
-    ...o,
-    items: items.map((it) => ({ idx: it.idx, stage: it.stage })),
-    status: statusFromItems(items, o.status),
-  };
+  let status = statusFromItems(items, o.status),
+    next = {
+      ...o,
+      items: items.map((it) => ({ idx: it.idx, stage: it.stage })),
+      status,
+    };
+  if (status === `تم التسليم`) {
+    // تاريخ التسليم/التحصيل الفعلي يُسجَّل آلياً ليدخل التقرير اليومي لذلك اليوم
+    if (!next.settledAt) next.settledAt = new Date().toISOString().slice(0, 10);
+    let rem = Math.max(0, C(next.orderValue) - (C(next.cash) + C(next.card)));
+    if (!C(next.settleCash ?? ``) && !C(next.settleCard ?? ``) && rem > 0) {
+      ((next.settleCash = x(String(Math.round(rem * 100) / 100))),
+        (next.settleCard = x(`0`)),
+        (next.paymentMethod = `cash`));
+    }
+  } else {
+    ((next.settledAt = ``), (next.settleCash = ``), (next.settleCard = ``));
+  }
+  return next;
 }
 
 // محدد الكسر الذكي: اختيار الكسر، والضغط على نفس الكسر يلغيه (بدون كلمة «بدون»)
