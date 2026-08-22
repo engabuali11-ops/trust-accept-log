@@ -865,6 +865,7 @@ function R(e) {
     card: ``,
     settleCash: ``,
     settleCard: ``,
+    settledAt: ``,
     paymentMethod: `none`,
 
     receiptDate: t,
