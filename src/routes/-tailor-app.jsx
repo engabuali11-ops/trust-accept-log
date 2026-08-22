@@ -715,11 +715,25 @@ function statusFromItems(items, prev) {
   return `قيد التنفيذ`;
 }
 function withItems(o, items) {
-  return {
-    ...o,
-    items: items.map((it) => ({ idx: it.idx, stage: it.stage })),
-    status: statusFromItems(items, o.status),
-  };
+  let status = statusFromItems(items, o.status),
+    next = {
+      ...o,
+      items: items.map((it) => ({ idx: it.idx, stage: it.stage })),
+      status,
+    };
+  if (status === `تم التسليم`) {
+    // تاريخ التسليم/التحصيل الفعلي يُسجَّل آلياً ليدخل التقرير اليومي لذلك اليوم
+    if (!next.settledAt) next.settledAt = new Date().toISOString().slice(0, 10);
+    let rem = Math.max(0, C(next.orderValue) - (C(next.cash) + C(next.card)));
+    if (!C(next.settleCash ?? ``) && !C(next.settleCard ?? ``) && rem > 0) {
+      ((next.settleCash = x(String(Math.round(rem * 100) / 100))),
+        (next.settleCard = x(`0`)),
+        (next.paymentMethod = `cash`));
+    }
+  } else {
+    ((next.settledAt = ``), (next.settleCash = ``), (next.settleCard = ``));
+  }
+  return next;
 }
 
 // محدد الكسر الذكي: اختيار الكسر، والضغط على نفس الكسر يلغيه (بدون كلمة «بدون»)
@@ -851,6 +865,7 @@ function R(e) {
     card: ``,
     settleCash: ``,
     settleCard: ``,
+    settledAt: ``,
     paymentMethod: `none`,
 
     receiptDate: t,
@@ -2093,6 +2108,47 @@ var DELIVERED = `تم التسليم`,
     let t = baseRemaining(e);
     return t > 0 ? `${w(t)} - ${settleLabel(e)}` : settleLabel(e);
   };
+/* ===== معالجة مالية: التسليم في تاريخ مختلف عن تاريخ القبض ===== */
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+/** تاريخ التسليم/التحصيل الفعلي المرتبط بالفاتورة. */
+function settleDateOf(o) {
+  return (o?.settledAt ?? ``) || (o?.deliveryDate ?? ``) || (o?.receiptDate ?? ``);
+}
+var settleCashOf = (o) => (isDelivered(o) ? C(o.settleCash ?? ``) : 0),
+  settleCardOf = (o) => (isDelivered(o) ? C(o.settleCard ?? ``) : 0),
+  /** هل التحصيل عند التسليم تم في يوم غير يوم الفاتورة؟ */
+  isDeferredSettle = (o) =>
+    isDelivered(o) &&
+    settleCashOf(o) + settleCardOf(o) > 0 &&
+    settleDateOf(o) !== (o?.receiptDate ?? ``),
+  /** كاش/شبكة محصّل فعلياً في يوم محدد (فاتورة جديدة + تحصيل عند التسليم المؤجل). */
+  dayCashOf = (o, day) =>
+    ((o?.receiptDate ?? ``) === day ? C(o.cash) : 0) +
+    (settleDateOf(o) === day ? settleCashOf(o) : 0),
+  dayCardOf = (o, day) =>
+    ((o?.receiptDate ?? ``) === day ? C(o.card) : 0) +
+    (settleDateOf(o) === day ? settleCardOf(o) : 0),
+  dayCollectedOf = (o, day) => dayCashOf(o, day) + dayCardOf(o, day),
+  /** الفواتير التي تدخل التقرير اليومي: فواتير اليوم + تسليمات محصّلة اليوم. */
+  ordersForDay = (list, day) =>
+    (list ?? []).filter(
+      (o) =>
+        (o?.receiptDate ?? ``) === day ||
+        (isDelivered(o) && settleDateOf(o) === day && settleCashOf(o) + settleCardOf(o) > 0),
+    ),
+  dayMovementLabel = (o, day) =>
+    (o?.receiptDate ?? ``) === day
+      ? settleDateOf(o) === day && settleCashOf(o) + settleCardOf(o) > 0
+        ? `فاتورة جديدة + تسليم`
+        : `فاتورة جديدة`
+      : `تحصيل عند التسليم`,
+  dayMethodLabel = (o, day) => {
+    let c = dayCashOf(o, day),
+      k2 = dayCardOf(o, day);
+    return c > 0 && k2 > 0 ? `كاش + شبكة` : k2 > 0 ? `شبكة` : c > 0 ? `كاش` : `آجل`;
+  };
 
 function Z(e) {
   let t = e.reduce((e, t) => e + X(t), 0),
@@ -2133,44 +2189,76 @@ function le(e) {
     i = n % 12 || 12;
   return `${x(`${String(i).padStart(2, `0`)}:${String(t.getMinutes()).padStart(2, `0`)}`)} ${r}`;
 }
-function ue(e) {
-  let t = e.reduce((e, t) => e + cashOf(t), 0),
-    n = e.reduce((e, t) => e + cardOf(t), 0),
-    r = e.reduce((e, t) => e + X(t), 0),
-    i = e.reduce((e, t) => e + X(t) - Y(t), 0);
+function ue(e, day = todayISO()) {
+  let list = [...e].sort(
+      (a, b) => Number(a.serial) - Number(b.serial),
+    ),
+    t = list.reduce((s, o) => s + dayCashOf(o, day), 0),
+    n = list.reduce((s, o) => s + dayCardOf(o, day), 0),
+    newInvoices = list.filter((o) => (o?.receiptDate ?? ``) === day),
+    deferred = list.filter((o) => (o?.receiptDate ?? ``) !== day),
+    newCollected = newInvoices.reduce((s, o) => s + dayCollectedOf(o, day), 0),
+    deferredCollected = deferred.reduce((s, o) => s + dayCollectedOf(o, day), 0),
+    r = newInvoices.reduce((s, o) => s + X(o), 0),
+    i = list.reduce((s, o) => s + Math.max(0, X(o) - Y(o)), 0);
 
   return {
     stats: [
-      { label: `عدد الطلبات`, value: x(e.length) },
+      { label: `عدد الطلبات`, value: x(newInvoices.length) },
+      { label: `تسليمات مؤجلة محصّلة`, value: x(deferred.length) },
       { label: `إجمالي الكاش`, value: w(t) },
       { label: `إجمالي الشبكة`, value: w(n) },
       { label: `إجمالي المبيعات`, value: w(r) },
-      { label: `إجمالي المحصل`, value: w(t + n) },
+      { label: `مقبوضات فواتير اليوم`, value: w(newCollected) },
+      { label: `مقبوضات عند التسليم المؤجل`, value: w(deferredCollected) },
+      { label: `إجمالي المحصل اليوم`, value: w(t + n) },
       { label: `إجمالي المتبقي / الديون`, value: w(i) },
     ],
     columns: [
       `التسلسل`,
       `اسم العميل`,
+      `نوع الحركة`,
       `طريقة الدفع`,
       `كاش`,
       `شبكة`,
-      `المدفوع`,
+      `محصل اليوم`,
       `المتبقي`,
-      `التاريخ`,
+      `تاريخ الفاتورة`,
+      `تاريخ التسليم`,
       `وقت الطلب`,
     ],
-    rows: e.map((e) => [
-      x(e.serial),
-      e.name || `-`,
-      ce(e),
-      w(cashOf(e)),
-      w(cardOf(e)),
-      w(Y(e)),
-      remainingLabel(e),
-
-      O(e.receiptDate),
-      le(e.createdAt),
-    ]),
+    rows: [
+      ...list.map((o) => [
+        x(o.serial),
+        o.name || `-`,
+        dayMovementLabel(o, day),
+        dayMethodLabel(o, day),
+        w(dayCashOf(o, day)),
+        w(dayCardOf(o, day)),
+        w(dayCollectedOf(o, day)),
+        remainingLabel(o),
+        O(o.receiptDate),
+        isDelivered(o) ? O(settleDateOf(o)) : `-`,
+        le(o.createdAt),
+      ]),
+      ...(list.length
+        ? [
+            [
+              `الإجمالي`,
+              ``,
+              ``,
+              ``,
+              w(t),
+              w(n),
+              w(t + n),
+              w(i),
+              ``,
+              ``,
+              ``,
+            ],
+          ]
+        : []),
+    ],
   };
 }
 function monthlyReport(e) {
@@ -2223,7 +2311,7 @@ function monthlyReport(e) {
 function de(e, t) {
   let n = new Date().toISOString().slice(0, 10),
     r = n.slice(0, 7);
-  if (e.includes(`اليومي`)) return ue(t.filter((e) => e.receiptDate === n));
+  if (e.includes(`اليومي`)) return ue(ordersForDay(t, n), n);
   if (e.includes(`الشهري`))
     return monthlyReport(t.filter((e) => (e.receiptDate ?? ``).startsWith(r)));
   if (e.includes(`العملاء`)) {
@@ -2528,7 +2616,9 @@ function fe() {
         if (n.status === DELIVERED) {
           if (!n.settleCash) n.settleCash = z2;
           if (!n.settleCard) n.settleCard = z2;
-        }
+          // تسجيل تاريخ التحصيل الفعلي عند التسليم (قد يختلف عن تاريخ الفاتورة)
+          if (!n.settledAt) n.settledAt = new Date().toISOString().slice(0, 10);
+        } else n.settledAt = ``;
 
         return n;
 
