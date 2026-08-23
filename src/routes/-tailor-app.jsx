@@ -3010,7 +3010,12 @@ function fe() {
               (t.name ?? ``).toLowerCase().includes(e) ||
               S2(t.mobile ?? ``).includes(e) ||
               S2(t.whatsapp ?? ``).includes(e) ||
-              String(t.serial).includes(e),
+              String(t.serial).includes(e) ||
+              // البحث بالتواريخ حتى تظهر الطلبات القديمة/الأرشيفية دائماً
+              (t.receiptDate ?? ``).includes(e) ||
+              (t.deliveryDate ?? ``).includes(e) ||
+              S2(O(t.receiptDate) ?? ``).includes(e) ||
+              (t.status ?? ``).toLowerCase().includes(e),
           )
         : N;
     }, [N, query]),
@@ -3160,31 +3165,41 @@ function fe() {
                 children: w(E),
               }),
               n.status === DELIVERED &&
-                (0, H.jsx)(`div`, {
-                  className: `mt-3 cursor-pointer text-[13px] font-bold text-ink`,
+                (0, H.jsx)(`button`, {
+                  type: `button`,
+                  className: `no-print mt-3 w-full cursor-pointer rounded-md border border-ink/60 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
                   onClick: () => b({ paymentMethod: `card` }),
+                  children: `شبكة بالكامل`,
+                }),
+              n.status === DELIVERED &&
+                (0, H.jsx)(`label`, {
+                  className: `mt-2 block text-[13px] font-bold text-ink`,
                   children: `الباقي شبكة`,
                 }),
               n.status === DELIVERED &&
                 (0, H.jsx)(`input`, {
                   inputMode: `decimal`,
                   value: x(n.settleCard ?? ``),
-                  onFocus: () => b({ paymentMethod: `card` }),
                   onChange: (e) => b({ settleCard: x(e.target.value) }),
                   placeholder: `٠.٠٠`,
                   className: `print-field mt-1 h-9 w-full rounded-md border border-ink/60 bg-transparent px-2 text-center text-[15px] text-ink outline-none focus:ring-1 focus:ring-ink/40`,
                 }),
               n.status === DELIVERED &&
-                (0, H.jsx)(`div`, {
-                  className: `mt-3 cursor-pointer text-[13px] font-bold text-ink`,
+                (0, H.jsx)(`button`, {
+                  type: `button`,
+                  className: `no-print mt-3 w-full cursor-pointer rounded-md border border-ink/60 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
                   onClick: () => b({ paymentMethod: `cash` }),
+                  children: `نقدي بالكامل`,
+                }),
+              n.status === DELIVERED &&
+                (0, H.jsx)(`label`, {
+                  className: `mt-2 block text-[13px] font-bold text-ink`,
                   children: `الباقي كاش`,
                 }),
               n.status === DELIVERED &&
                 (0, H.jsx)(`input`, {
                   inputMode: `decimal`,
                   value: x(n.settleCash ?? ``),
-                  onFocus: () => b({ paymentMethod: `cash` }),
                   onChange: (e) => b({ settleCash: x(e.target.value) }),
                   placeholder: `٠.٠٠`,
                   className: `print-field mt-1 h-9 w-full rounded-md border border-ink/60 bg-transparent px-2 text-center text-[15px] text-ink outline-none focus:ring-1 focus:ring-ink/40`,
