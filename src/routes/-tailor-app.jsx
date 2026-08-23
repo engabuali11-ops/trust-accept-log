@@ -791,6 +791,7 @@ var A = [
   ae = [
     `تقرير المبيعات اليومي`,
     `تقرير المبيعات الشهري`,
+    `تقرير المبيعات السنوي`,
     `تقرير العملاء`,
     `تقرير الأصناف`,
     `تقرير المندوبين`,
@@ -2329,10 +2330,87 @@ function monthlyReport(e) {
     ],
   };
 }
+var MONTH_NAMES_AR = [
+  `يناير`,
+  `فبراير`,
+  `مارس`,
+  `أبريل`,
+  `مايو`,
+  `يونيو`,
+  `يوليو`,
+  `أغسطس`,
+  `سبتمبر`,
+  `أكتوبر`,
+  `نوفمبر`,
+  `ديسمبر`,
+];
+/** التقرير السنوي: تجميع آلي لكل أشهر السنة المالية. */
+function annualReport(list, year) {
+  let rows = [],
+    tCount = 0,
+    tQty = 0,
+    tValue = 0,
+    tCash = 0,
+    tCard = 0;
+  for (let m = 0; m < 12; m++) {
+    let key = `${year}-${String(m + 1).padStart(2, `0`)}`,
+      arr = (list ?? []).filter((o) => (o?.receiptDate ?? ``).startsWith(key)),
+      qty = arr.reduce((s, o) => s + (C(o.count) || 0), 0),
+      value = arr.reduce((s, o) => s + X(o), 0),
+      cash = arr.reduce((s, o) => s + cashOf(o), 0),
+      card = arr.reduce((s, o) => s + cardOf(o), 0),
+      paid = cash + card;
+    ((tCount += arr.length), (tQty += qty), (tValue += value), (tCash += cash), (tCard += card));
+    rows.push([
+      MONTH_NAMES_AR[m],
+      x(arr.length),
+      x(String(qty)),
+      w(value),
+      w(cash),
+      w(card),
+      w(paid),
+      w(Math.max(0, value - paid)),
+    ]);
+  }
+  rows.push([
+    `الإجمالي السنوي`,
+    x(tCount),
+    x(String(tQty)),
+    w(tValue),
+    w(tCash),
+    w(tCard),
+    w(tCash + tCard),
+    w(Math.max(0, tValue - (tCash + tCard))),
+  ]);
+  return {
+    stats: [
+      { label: `السنة`, value: x(year) },
+      { label: `عدد الطلبات`, value: x(tCount) },
+      { label: `عدد الثياب`, value: x(String(tQty)) },
+      { label: `إجمالي المبيعات`, value: w(tValue) },
+      { label: `إجمالي كاش`, value: w(tCash) },
+      { label: `إجمالي شبكة`, value: w(tCard) },
+      { label: `إجمالي المحصل`, value: w(tCash + tCard) },
+      { label: `إجمالي المتبقي`, value: w(Math.max(0, tValue - (tCash + tCard))) },
+    ],
+    columns: [
+      `الشهر`,
+      `عدد الطلبات`,
+      `عدد الثياب`,
+      `إجمالي المبيعات`,
+      `كاش`,
+      `شبكة`,
+      `إجمالي المحصل`,
+      `المتبقي`,
+    ],
+    rows,
+  };
+}
 function de(e, t) {
   let n = new Date().toISOString().slice(0, 10),
     r = n.slice(0, 7);
   if (e.includes(`اليومي`)) return ue(ordersForDay(t, n), n);
+  if (e.includes(`السنوي`)) return annualReport(t, n.slice(0, 4));
   if (e.includes(`الشهري`))
     return monthlyReport(t.filter((e) => (e.receiptDate ?? ``).startsWith(r)));
   if (e.includes(`العملاء`)) {
@@ -2623,23 +2701,41 @@ function fe() {
             ? ((n.settleCash = remStr), (n.settleCard = z2), (n.paymentMethod = `cash`))
             : ((n.settleCash = ``), (n.settleCard = ``), (n.paymentMethod = `none`));
         } else if (`settleCash` in e) {
-          if (C(n.settleCash) > rem) n.settleCash = remStr;
-          ((n.settleCard = z2), (n.paymentMethod = `cash`));
+          // تقسيم تلقائي متوازن: الكاش المُدخل + الباقي شبكة
+          let c = C(n.settleCash);
+          if (!Number.isFinite(c) || c < 0) c = 0;
+          if (c > rem) c = rem;
+          let k3 = Math.round((rem - c) * 100) / 100;
+          ((n.settleCash = x(String(Math.round(c * 100) / 100))),
+            (n.settleCard = x(String(k3))),
+            (n.paymentMethod = k3 <= 0 ? `cash` : c <= 0 ? `card` : `split`));
         } else if (`settleCard` in e) {
-          if (C(n.settleCard) > rem) n.settleCard = remStr;
-          ((n.settleCash = z2), (n.paymentMethod = `card`));
+          // تقسيم تلقائي متوازن: الشبكة المُدخلة + الباقي كاش
+          let k3 = C(n.settleCard);
+          if (!Number.isFinite(k3) || k3 < 0) k3 = 0;
+          if (k3 > rem) k3 = rem;
+          let c = Math.round((rem - k3) * 100) / 100;
+          ((n.settleCard = x(String(Math.round(k3 * 100) / 100))),
+            (n.settleCash = x(String(c))),
+            (n.paymentMethod = c <= 0 ? `card` : k3 <= 0 ? `cash` : `split`));
         } else if (n.status === DELIVERED && (`orderValue` in e || `cash` in e || `card` in e)) {
-          n.paymentMethod === `card`
-            ? ((n.settleCard = remStr), (n.settleCash = z2))
-            : ((n.settleCash = remStr), (n.settleCard = z2));
+          if (n.paymentMethod === `split`) {
+            let c = Math.min(Math.max(0, C(n.settleCash)), rem);
+            ((n.settleCash = x(String(Math.round(c * 100) / 100))),
+              (n.settleCard = x(String(Math.round((rem - c) * 100) / 100))));
+          } else
+            n.paymentMethod === `card`
+              ? ((n.settleCard = remStr), (n.settleCash = z2))
+              : ((n.settleCash = remStr), (n.settleCard = z2));
         }
         // لا تُترك حقول السداد فارغة/غير معرّفة عند حالة التسليم
         if (n.status === DELIVERED) {
           if (!n.settleCash) n.settleCash = z2;
           if (!n.settleCard) n.settleCard = z2;
-          // تسجيل تاريخ التحصيل الفعلي عند التسليم (قد يختلف عن تاريخ الفاتورة)
-          if (!n.settledAt) n.settledAt = new Date().toISOString().slice(0, 10);
+          // تسجيل تاريخ التحصيل الفعلي (اليوم للطلب الجاري، والتاريخ القديم للأرشيفي)
+          if (!n.settledAt) n.settledAt = settleStampDate(n);
         } else n.settledAt = ``;
+
 
         return n;
 
@@ -2914,7 +3010,12 @@ function fe() {
               (t.name ?? ``).toLowerCase().includes(e) ||
               S2(t.mobile ?? ``).includes(e) ||
               S2(t.whatsapp ?? ``).includes(e) ||
-              String(t.serial).includes(e),
+              String(t.serial).includes(e) ||
+              // البحث بالتواريخ حتى تظهر الطلبات القديمة/الأرشيفية دائماً
+              (t.receiptDate ?? ``).includes(e) ||
+              (t.deliveryDate ?? ``).includes(e) ||
+              S2(O(t.receiptDate) ?? ``).includes(e) ||
+              (t.status ?? ``).toLowerCase().includes(e),
           )
         : N;
     }, [N, query]),
@@ -3064,31 +3165,41 @@ function fe() {
                 children: w(E),
               }),
               n.status === DELIVERED &&
-                (0, H.jsx)(`div`, {
-                  className: `mt-3 cursor-pointer text-[13px] font-bold text-ink`,
+                (0, H.jsx)(`button`, {
+                  type: `button`,
+                  className: `no-print mt-3 w-full cursor-pointer rounded-md border border-ink/60 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
                   onClick: () => b({ paymentMethod: `card` }),
+                  children: `شبكة بالكامل`,
+                }),
+              n.status === DELIVERED &&
+                (0, H.jsx)(`label`, {
+                  className: `mt-2 block text-[13px] font-bold text-ink`,
                   children: `الباقي شبكة`,
                 }),
               n.status === DELIVERED &&
                 (0, H.jsx)(`input`, {
                   inputMode: `decimal`,
                   value: x(n.settleCard ?? ``),
-                  onFocus: () => b({ paymentMethod: `card` }),
                   onChange: (e) => b({ settleCard: x(e.target.value) }),
                   placeholder: `٠.٠٠`,
                   className: `print-field mt-1 h-9 w-full rounded-md border border-ink/60 bg-transparent px-2 text-center text-[15px] text-ink outline-none focus:ring-1 focus:ring-ink/40`,
                 }),
               n.status === DELIVERED &&
-                (0, H.jsx)(`div`, {
-                  className: `mt-3 cursor-pointer text-[13px] font-bold text-ink`,
+                (0, H.jsx)(`button`, {
+                  type: `button`,
+                  className: `no-print mt-3 w-full cursor-pointer rounded-md border border-ink/60 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
                   onClick: () => b({ paymentMethod: `cash` }),
+                  children: `نقدي بالكامل`,
+                }),
+              n.status === DELIVERED &&
+                (0, H.jsx)(`label`, {
+                  className: `mt-2 block text-[13px] font-bold text-ink`,
                   children: `الباقي كاش`,
                 }),
               n.status === DELIVERED &&
                 (0, H.jsx)(`input`, {
                   inputMode: `decimal`,
                   value: x(n.settleCash ?? ``),
-                  onFocus: () => b({ paymentMethod: `cash` }),
                   onChange: (e) => b({ settleCash: x(e.target.value) }),
                   placeholder: `٠.٠٠`,
                   className: `print-field mt-1 h-9 w-full rounded-md border border-ink/60 bg-transparent px-2 text-center text-[15px] text-ink outline-none focus:ring-1 focus:ring-ink/40`,
