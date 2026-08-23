@@ -791,6 +791,7 @@ var A = [
   ae = [
     `تقرير المبيعات اليومي`,
     `تقرير المبيعات الشهري`,
+    `تقرير المبيعات السنوي`,
     `تقرير العملاء`,
     `تقرير الأصناف`,
     `تقرير المندوبين`,
@@ -2623,23 +2624,41 @@ function fe() {
             ? ((n.settleCash = remStr), (n.settleCard = z2), (n.paymentMethod = `cash`))
             : ((n.settleCash = ``), (n.settleCard = ``), (n.paymentMethod = `none`));
         } else if (`settleCash` in e) {
-          if (C(n.settleCash) > rem) n.settleCash = remStr;
-          ((n.settleCard = z2), (n.paymentMethod = `cash`));
+          // تقسيم تلقائي متوازن: الكاش المُدخل + الباقي شبكة
+          let c = C(n.settleCash);
+          if (!Number.isFinite(c) || c < 0) c = 0;
+          if (c > rem) c = rem;
+          let k3 = Math.round((rem - c) * 100) / 100;
+          ((n.settleCash = x(String(Math.round(c * 100) / 100))),
+            (n.settleCard = x(String(k3))),
+            (n.paymentMethod = k3 <= 0 ? `cash` : c <= 0 ? `card` : `split`));
         } else if (`settleCard` in e) {
-          if (C(n.settleCard) > rem) n.settleCard = remStr;
-          ((n.settleCash = z2), (n.paymentMethod = `card`));
+          // تقسيم تلقائي متوازن: الشبكة المُدخلة + الباقي كاش
+          let k3 = C(n.settleCard);
+          if (!Number.isFinite(k3) || k3 < 0) k3 = 0;
+          if (k3 > rem) k3 = rem;
+          let c = Math.round((rem - k3) * 100) / 100;
+          ((n.settleCard = x(String(Math.round(k3 * 100) / 100))),
+            (n.settleCash = x(String(c))),
+            (n.paymentMethod = c <= 0 ? `card` : k3 <= 0 ? `cash` : `split`));
         } else if (n.status === DELIVERED && (`orderValue` in e || `cash` in e || `card` in e)) {
-          n.paymentMethod === `card`
-            ? ((n.settleCard = remStr), (n.settleCash = z2))
-            : ((n.settleCash = remStr), (n.settleCard = z2));
+          if (n.paymentMethod === `split`) {
+            let c = Math.min(Math.max(0, C(n.settleCash)), rem);
+            ((n.settleCash = x(String(Math.round(c * 100) / 100))),
+              (n.settleCard = x(String(Math.round((rem - c) * 100) / 100))));
+          } else
+            n.paymentMethod === `card`
+              ? ((n.settleCard = remStr), (n.settleCash = z2))
+              : ((n.settleCash = remStr), (n.settleCard = z2));
         }
         // لا تُترك حقول السداد فارغة/غير معرّفة عند حالة التسليم
         if (n.status === DELIVERED) {
           if (!n.settleCash) n.settleCash = z2;
           if (!n.settleCard) n.settleCard = z2;
-          // تسجيل تاريخ التحصيل الفعلي عند التسليم (قد يختلف عن تاريخ الفاتورة)
-          if (!n.settledAt) n.settledAt = new Date().toISOString().slice(0, 10);
+          // تسجيل تاريخ التحصيل الفعلي (اليوم للطلب الجاري، والتاريخ القديم للأرشيفي)
+          if (!n.settledAt) n.settledAt = settleStampDate(n);
         } else n.settledAt = ``;
+
 
         return n;
 
