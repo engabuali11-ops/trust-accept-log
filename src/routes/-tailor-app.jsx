@@ -2330,10 +2330,87 @@ function monthlyReport(e) {
     ],
   };
 }
+var MONTH_NAMES_AR = [
+  `يناير`,
+  `فبراير`,
+  `مارس`,
+  `أبريل`,
+  `مايو`,
+  `يونيو`,
+  `يوليو`,
+  `أغسطس`,
+  `سبتمبر`,
+  `أكتوبر`,
+  `نوفمبر`,
+  `ديسمبر`,
+];
+/** التقرير السنوي: تجميع آلي لكل أشهر السنة المالية. */
+function annualReport(list, year) {
+  let rows = [],
+    tCount = 0,
+    tQty = 0,
+    tValue = 0,
+    tCash = 0,
+    tCard = 0;
+  for (let m = 0; m < 12; m++) {
+    let key = `${year}-${String(m + 1).padStart(2, `0`)}`,
+      arr = (list ?? []).filter((o) => (o?.receiptDate ?? ``).startsWith(key)),
+      qty = arr.reduce((s, o) => s + (C(o.count) || 0), 0),
+      value = arr.reduce((s, o) => s + X(o), 0),
+      cash = arr.reduce((s, o) => s + cashOf(o), 0),
+      card = arr.reduce((s, o) => s + cardOf(o), 0),
+      paid = cash + card;
+    ((tCount += arr.length), (tQty += qty), (tValue += value), (tCash += cash), (tCard += card));
+    rows.push([
+      MONTH_NAMES_AR[m],
+      x(arr.length),
+      x(String(qty)),
+      w(value),
+      w(cash),
+      w(card),
+      w(paid),
+      w(Math.max(0, value - paid)),
+    ]);
+  }
+  rows.push([
+    `الإجمالي السنوي`,
+    x(tCount),
+    x(String(tQty)),
+    w(tValue),
+    w(tCash),
+    w(tCard),
+    w(tCash + tCard),
+    w(Math.max(0, tValue - (tCash + tCard))),
+  ]);
+  return {
+    stats: [
+      { label: `السنة`, value: x(year) },
+      { label: `عدد الطلبات`, value: x(tCount) },
+      { label: `عدد الثياب`, value: x(String(tQty)) },
+      { label: `إجمالي المبيعات`, value: w(tValue) },
+      { label: `إجمالي كاش`, value: w(tCash) },
+      { label: `إجمالي شبكة`, value: w(tCard) },
+      { label: `إجمالي المحصل`, value: w(tCash + tCard) },
+      { label: `إجمالي المتبقي`, value: w(Math.max(0, tValue - (tCash + tCard))) },
+    ],
+    columns: [
+      `الشهر`,
+      `عدد الطلبات`,
+      `عدد الثياب`,
+      `إجمالي المبيعات`,
+      `كاش`,
+      `شبكة`,
+      `إجمالي المحصل`,
+      `المتبقي`,
+    ],
+    rows,
+  };
+}
 function de(e, t) {
   let n = new Date().toISOString().slice(0, 10),
     r = n.slice(0, 7);
   if (e.includes(`اليومي`)) return ue(ordersForDay(t, n), n);
+  if (e.includes(`السنوي`)) return annualReport(t, n.slice(0, 4));
   if (e.includes(`الشهري`))
     return monthlyReport(t.filter((e) => (e.receiptDate ?? ``).startsWith(r)));
   if (e.includes(`العملاء`)) {
