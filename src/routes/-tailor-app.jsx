@@ -3092,6 +3092,42 @@ function fe() {
         ));
     },
 
+    // سجل العملاء المحفوظين: أحدث طلب لكل اسم (بحث ذكي فوري في خانة الاسم)
+    clientList = (0, u.useMemo)(() => {
+      let map = new Map();
+      for (let o of N) {
+        let key = (o.name ?? ``).trim();
+        if (!key) continue;
+        let prev = map.get(key);
+        if (!prev || Number(o.serial) > Number(prev.serial)) map.set(key, o);
+      }
+      return [...map.values()].sort((a, b) => (a.name ?? ``).localeCompare(b.name ?? ``, `ar`));
+    }, [N]),
+    // تعبئة مقاسات وبيانات العميل المسجّل مسبقاً بضغطة واحدة
+    onPickClient = (src) => {
+      if (!src) return;
+      let keep = new Set([
+        `serial`,
+        `createdAt`,
+        `receiptDate`,
+        `deliveryDate`,
+        `status`,
+        `cash`,
+        `card`,
+        `settleCash`,
+        `settleCard`,
+        `settledAt`,
+        `isArchival`,
+        `orderValue`,
+        `unitPrice`,
+        `count`,
+        `items`,
+        `paymentMethod`,
+      ]);
+      let patchObj = {};
+      for (let k2 of Object.keys(src)) if (!keep.has(k2)) patchObj[k2] = src[k2];
+      (b(patchObj), r.success(`تم استدعاء بيانات ومقاسات العميل ${src.name ?? ``}`));
+    },
     filteredOrders = (0, u.useMemo)(() => {
       let e = S2(query).trim().toLowerCase();
       return e
