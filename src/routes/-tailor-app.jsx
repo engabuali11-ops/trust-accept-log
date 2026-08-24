@@ -2882,6 +2882,9 @@ function fe() {
         o.cuffHeight?.whole
           ? `ارتفاع الكبك: ${o.cuffHeight.whole}${hasFrac(o.cuffHeight.frac) ? ` ${o.cuffHeight.frac}` : ``}`
           : ``,
+        o.cuffLength?.whole
+          ? `طول الكبك: ${o.cuffLength.whole}${hasFrac(o.cuffLength.frac) ? ` ${o.cuffLength.frac}` : ``}`
+          : ``,
         o.placketHeight?.whole
           ? `ارتفاع الكسرة: ${o.placketHeight.whole}${hasFrac(o.placketHeight.frac) ? ` ${o.placketHeight.frac}` : ``}`
           : ``,
