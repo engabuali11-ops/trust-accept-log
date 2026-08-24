@@ -1374,10 +1374,12 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
                     className: `w-[52px] text-[13px] font-bold`,
                     children: `الاسم :`,
                   }),
-                  (0, H.jsx)(U, {
+                  (0, H.jsx)(ClientNameField, {
                     value: e.name,
                     readOnly: n,
-                    onChange: (e) => t({ name: e }),
+                    clients: clientList,
+                    onChange: (v) => t({ name: v }),
+                    onPick: onPickClient,
                   }),
                 ],
               }),
