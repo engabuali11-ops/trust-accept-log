@@ -1320,7 +1320,60 @@ function SleeveNoteCell({ value: e, onChange: t, readOnly: n, wholeOpts: wOpts }
     ],
   });
 }
-function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
+/** بحث ذكي فوري بأسماء العملاء المحفوظين مع تعبئة بياناتهم بضغطة واحدة. */
+function ClientNameField({ value, readOnly, clients = [], onChange, onPick }) {
+  let [open, setOpen] = React.useState(!1),
+    ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    let h = (ev) => {
+      if (ref.current && !ref.current.contains(ev.target)) setOpen(!1);
+    };
+    document.addEventListener(`mousedown`, h);
+    return () => document.removeEventListener(`mousedown`, h);
+  }, [open]);
+  let q2 = String(value ?? ``).trim(),
+    matches = (clients ?? [])
+      .filter((c) => (c.name ?? ``).trim() && (!q2 || (c.name ?? ``).includes(q2)))
+      .slice(0, 8);
+  return H.jsxs(`div`, {
+    ref,
+    className: `relative flex-1`,
+    children: [
+      H.jsx(U, {
+        value: value,
+        readOnly: readOnly,
+        onChange: (v) => {
+          (onChange(v), setOpen(!0));
+        },
+      }),
+      !readOnly &&
+        open &&
+        matches.length > 0 &&
+        H.jsx(`div`, {
+          className: `no-print absolute inset-x-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-md border border-ink/60 bg-sheet shadow-lg`,
+          children: matches.map((c) =>
+            H.jsxs(
+              `button`,
+              {
+                type: `button`,
+                onClick: () => {
+                  (onPick?.(c), setOpen(!1));
+                },
+                className: `flex w-full items-center justify-between gap-2 px-2 py-1 text-right text-[12px] font-bold text-ink hover:bg-ink/10`,
+                children: [
+                  H.jsx(`span`, { children: c.name }),
+                  H.jsx(`span`, { className: `text-[11px] text-ink/70`, children: x(c.mobile ?? ``) }),
+                ],
+              },
+              `${c.name}-${c.serial}`,
+            ),
+          ),
+        }),
+    ],
+  });
+}
+function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPickClient }) {
   let r = (n, r, i) => {
       let a = [...e[n]];
       ((a[r] = i), t({ [n]: a }));
