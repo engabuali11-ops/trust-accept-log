@@ -3520,7 +3520,15 @@ function fe() {
           }),
           (0, H.jsxs)(`main`, {
             className: `flex items-start justify-center gap-3 p-3 pb-16`,
-            children: [P(!1), (0, H.jsx)(J, { order: n, patch: b })],
+            children: [
+              P(!1),
+              (0, H.jsx)(J, {
+                order: n,
+                patch: b,
+                clientList: clientList,
+                onPickClient: onPickClient,
+              }),
+            ],
           }),
           (0, H.jsx)(`div`, {
             className: `no-print fixed inset-x-0 bottom-6 z-40 flex flex-wrap items-center justify-center gap-2 border-t-2 border-ink/40 bg-sheet px-3 py-2`,
