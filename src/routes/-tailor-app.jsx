@@ -2247,11 +2247,17 @@ function ue(e, day = todayISO()) {
     newCollected = newInvoices.reduce((s, o) => s + dayCollectedOf(o, day), 0),
     deferredCollected = deferred.reduce((s, o) => s + dayCollectedOf(o, day), 0),
     r = newInvoices.reduce((s, o) => s + X(o), 0),
+    // عدد الثياب: يُحسب آلياً من طلبات نفس اليوم (عدد الثياب في كل فاتورة)
+    garments = newInvoices.reduce(
+      (s, o) => s + (C(o.count) || orderItems(o).length || 0),
+      0,
+    ),
     i = list.reduce((s, o) => s + Math.max(0, X(o) - Y(o)), 0);
 
   return {
     stats: [
       { label: `عدد الطلبات`, value: x(newInvoices.length) },
+      { label: `عدد الثياب`, value: x(String(garments)) },
       { label: `تسليمات مؤجلة محصّلة`, value: x(deferred.length) },
       { label: `إجمالي الكاش`, value: w(t) },
       { label: `إجمالي الشبكة`, value: w(n) },
