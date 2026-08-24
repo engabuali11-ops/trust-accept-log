@@ -2554,6 +2554,7 @@ function fe() {
     [query, setQuery] = (0, u.useState)(``),
     [cardOrder, setCardOrder] = (0, u.useState)(null),
     [printReport, setPrintReport] = (0, u.useState)(null),
+    [reportDate, setReportDate] = (0, u.useState)(() => new Date().toISOString().slice(0, 10)),
     [greetingsOpen, setGreetingsOpen] = (0, u.useState)(!1),
     [tailorOpen, setTailorOpen] = (0, u.useState)(!1),
     [tailorBoardOpen, setTailorBoardOpen] = (0, u.useState)(!1),
