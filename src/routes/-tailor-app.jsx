@@ -4446,16 +4446,52 @@ function fe() {
               (0, H.jsxs)(`div`, {
                 className: `mb-3 flex items-center justify-between`,
                 children: [
-                  (0, H.jsx)(`h2`, {
+                  (0, H.jsxs)(`h2`, {
                     className: `text-[16px] font-bold text-ink`,
-                    children: f,
+                    children: [
+                      f,
+                      (f.includes(`اليومي`) || f.includes(`الشهري`)) &&
+                        (0, H.jsx)(`span`, {
+                          className: `ms-2 text-[12px] font-bold text-ink/70`,
+                          children: f.includes(`اليومي`)
+                            ? O(reportDate)
+                            : `${reportDate.slice(0, 7)}`,
+                        }),
+                    ],
                   }),
                   (0, H.jsxs)(`div`, {
-                    className: `flex items-center gap-2`,
+                    className: `flex flex-wrap items-center gap-2`,
                     children: [
+                      // بحث واستعراض ذكي بالتاريخ للتقرير اليومي والشهري
+                      (f.includes(`اليومي`) || f.includes(`الشهري`)) &&
+                        (0, H.jsx)(`input`, {
+                          type: `date`,
+                          value: reportDate,
+                          "aria-label": `تاريخ التقرير`,
+                          onChange: (e) =>
+                            setReportDate(
+                              e.target.value || new Date().toISOString().slice(0, 10),
+                            ),
+                          className: `rounded-md border border-ink/60 bg-transparent px-2 py-1 text-[13px] font-bold text-ink outline-none`,
+                        }),
+                      f.includes(`الشهري`) &&
+                        (0, H.jsx)(`button`, {
+                          type: `button`,
+                          onClick: () => y(`تقرير المبيعات اليومي`),
+                          className: `rounded-md border border-ink/60 px-3 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
+                          children: `عرض التقرير اليومي للتاريخ`,
+                        }),
+                      f.includes(`اليومي`) &&
+                        (0, H.jsx)(`button`, {
+                          type: `button`,
+                          onClick: () => y(`تقرير المبيعات الشهري`),
+                          className: `rounded-md border border-ink/60 px-3 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
+                          children: `عرض التقرير الشهري`,
+                        }),
                       (0, H.jsx)(`button`, {
                         type: `button`,
-                        onClick: () => setPrintReport({ title: f, data: de(f, N) }),
+                        onClick: () =>
+                          setPrintReport({ title: f, data: de(f, N, reportDate) }),
                         className: `rounded-md border border-ink/60 px-3 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
                         children: `طباعة`,
                       }),
@@ -4469,7 +4505,7 @@ function fe() {
                 ],
               }),
               (() => {
-                let e = de(f, N);
+                let e = de(f, N, reportDate);
                 return (0, H.jsxs)(H.Fragment, {
                   children: [
                     (0, H.jsx)(`div`, {
