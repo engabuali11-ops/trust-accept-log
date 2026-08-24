@@ -1119,17 +1119,29 @@ function q({
 }
 var CROTCH_OPTS = [``, ...Array.from({ length: 10 }, (e, t) => `${x(t + 3)} هـ`)],
   CUFF_H_OPTS = [``, ...Array.from({ length: 4 }, (e, t) => `${x(t + 2)} هـ`)],
+  /** طول الكبك: من ٤ هـ حتى ١٥ هـ */
+  CUFF_LEN_OPTS = [``, ...Array.from({ length: 12 }, (e, t) => `${x(t + 4)} هـ`)],
   NOTE_H_OPTS = [``, ...Array.from({ length: 9 }, (e, t) => x(t + 4))],
   NECK_H_OPTS = [``, `١`, `٢`, `٣`],
   NECK_SPEC_OPTS = [``, `١ طـ بلاستيك`, `٢ طـ بلاستيك`, `١ طـ حديد`, `٢ طـ حديد`];
-var SLEEVE_WHOLE_OPTS = [``, ...Array.from({ length: 23 }, (e, t) => x(t + 10))],
+var rangeOpts = (from, to) => [
+    ``,
+    ...Array.from({ length: to - from + 1 }, (e, t) => x(t + from)),
+  ],
+  SLEEVE_WHOLE_OPTS = [``, ...Array.from({ length: 23 }, (e, t) => x(t + 10))],
   NECK_WHOLE_OPTS = [``, ...Array.from({ length: 14 }, (e, t) => x(t + 7))],
   MEASURE_WHOLE_OPTS = {
+    0: rangeOpts(30, 70), // الطول
+    1: rangeOpts(8, 22), // الكتف
     2: SLEEVE_WHOLE_OPTS,
     3: SLEEVE_WHOLE_OPTS,
     4: NECK_WHOLE_OPTS,
     5: NECK_WHOLE_OPTS,
+    6: rangeOpts(10, 40), // العرض
+    7: rangeOpts(20, 40), // أسفل
   },
+  /** لاحقة «هــ» تظهر فقط لخانات الأكمام والرقبة */
+  MEASURE_WHOLE_SUFFIX = { 2: !0, 3: !0, 4: !0, 5: !0 },
   WIDTH_NOTE_PRESETS = [`توسيع الورك`];
 function NeckNoteCell({ value: e, onChange: t, readOnly: n, wholeOpts: wOpts }) {
   let r = e ?? { whole: ``, frac: ``, spec: `` };
