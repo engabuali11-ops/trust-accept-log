@@ -854,6 +854,7 @@ function R(e) {
     model: `model0`,
     shoulder: ``,
     cuffHeight: { whole: ``, frac: `` },
+    cuffLength: { whole: ``, frac: `` },
     plainCuff: { whole: ``, frac: `` },
     cuffEmbroidery: !1,
     placketEmbroidery: !1,
