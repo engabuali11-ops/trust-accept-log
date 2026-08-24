@@ -1944,6 +1944,17 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
                               readOnly: n,
                               onChange: (e) => t({ cuffHeight: e }),
                             }),
+                            (0, H.jsx)(`div`, {
+                              className: `mt-1`,
+                              children: (0, H.jsx)(q, {
+                                title: `طول الكبك`,
+                                wholeAsSelect: !0,
+                                options: CUFF_LEN_OPTS,
+                                value: e.cuffLength ?? { whole: ``, frac: `` },
+                                readOnly: n,
+                                onChange: (e) => t({ cuffLength: e }),
+                              }),
+                            }),
                             (0, H.jsxs)(`div`, {
                               className: `mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-ink/50 py-[2px] text-[11px] font-bold text-ink`,
                               onClick: () => !n && t({ cuffEmbroidery: !e.cuffEmbroidery }),
