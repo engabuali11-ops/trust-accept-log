@@ -1551,10 +1551,11 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
                                             (0, H.jsx)(`option`, { value: e, children: e }, e),
                                           ),
                                         }),
-                                    (0, H.jsx)(`span`, {
-                                      className: `shrink-0 text-[12px] font-bold text-destructive`,
-                                      children: `هــ`,
-                                    }),
+                                    MEASURE_WHOLE_SUFFIX[r] &&
+                                      (0, H.jsx)(`span`, {
+                                        className: `shrink-0 text-[12px] font-bold text-destructive`,
+                                        children: `هــ`,
+                                      }),
                                   ],
                                 })
                               : (0, H.jsx)(W, {
