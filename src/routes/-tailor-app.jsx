@@ -2437,8 +2437,8 @@ function annualReport(list, year) {
     rows,
   };
 }
-function de(e, t) {
-  let n = new Date().toISOString().slice(0, 10),
+function de(e, t, day) {
+  let n = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : new Date().toISOString().slice(0, 10),
     r = n.slice(0, 7);
   if (e.includes(`اليومي`)) return ue(ordersForDay(t, n), n);
   if (e.includes(`السنوي`)) return annualReport(t, n.slice(0, 4));
