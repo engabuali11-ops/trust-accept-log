@@ -854,6 +854,7 @@ function R(e) {
     model: `model0`,
     shoulder: ``,
     cuffHeight: { whole: ``, frac: `` },
+    cuffLength: { whole: ``, frac: `` },
     plainCuff: { whole: ``, frac: `` },
     cuffEmbroidery: !1,
     placketEmbroidery: !1,
@@ -1119,17 +1120,29 @@ function q({
 }
 var CROTCH_OPTS = [``, ...Array.from({ length: 10 }, (e, t) => `${x(t + 3)} هـ`)],
   CUFF_H_OPTS = [``, ...Array.from({ length: 4 }, (e, t) => `${x(t + 2)} هـ`)],
+  /** طول الكبك: من ٤ هـ حتى ١٥ هـ */
+  CUFF_LEN_OPTS = [``, ...Array.from({ length: 12 }, (e, t) => `${x(t + 4)} هـ`)],
   NOTE_H_OPTS = [``, ...Array.from({ length: 9 }, (e, t) => x(t + 4))],
   NECK_H_OPTS = [``, `١`, `٢`, `٣`],
   NECK_SPEC_OPTS = [``, `١ طـ بلاستيك`, `٢ طـ بلاستيك`, `١ طـ حديد`, `٢ طـ حديد`];
-var SLEEVE_WHOLE_OPTS = [``, ...Array.from({ length: 23 }, (e, t) => x(t + 10))],
+var rangeOpts = (from, to) => [
+    ``,
+    ...Array.from({ length: to - from + 1 }, (e, t) => x(t + from)),
+  ],
+  SLEEVE_WHOLE_OPTS = [``, ...Array.from({ length: 23 }, (e, t) => x(t + 10))],
   NECK_WHOLE_OPTS = [``, ...Array.from({ length: 14 }, (e, t) => x(t + 7))],
   MEASURE_WHOLE_OPTS = {
+    0: rangeOpts(30, 70), // الطول
+    1: rangeOpts(8, 22), // الكتف
     2: SLEEVE_WHOLE_OPTS,
     3: SLEEVE_WHOLE_OPTS,
     4: NECK_WHOLE_OPTS,
     5: NECK_WHOLE_OPTS,
+    6: rangeOpts(10, 40), // العرض
+    7: rangeOpts(20, 40), // أسفل
   },
+  /** لاحقة «هــ» تظهر فقط لخانات الأكمام والرقبة */
+  MEASURE_WHOLE_SUFFIX = { 2: !0, 3: !0, 4: !0, 5: !0 },
   WIDTH_NOTE_PRESETS = [`توسيع الورك`];
 function NeckNoteCell({ value: e, onChange: t, readOnly: n, wholeOpts: wOpts }) {
   let r = e ?? { whole: ``, frac: ``, spec: `` };
@@ -1307,7 +1320,60 @@ function SleeveNoteCell({ value: e, onChange: t, readOnly: n, wholeOpts: wOpts }
     ],
   });
 }
-function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
+/** بحث ذكي فوري بأسماء العملاء المحفوظين مع تعبئة بياناتهم بضغطة واحدة. */
+function ClientNameField({ value, readOnly, clients = [], onChange, onPick }) {
+  let [open, setOpen] = React.useState(!1),
+    ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    let h = (ev) => {
+      if (ref.current && !ref.current.contains(ev.target)) setOpen(!1);
+    };
+    document.addEventListener(`mousedown`, h);
+    return () => document.removeEventListener(`mousedown`, h);
+  }, [open]);
+  let q2 = String(value ?? ``).trim(),
+    matches = (clients ?? [])
+      .filter((c) => (c.name ?? ``).trim() && (!q2 || (c.name ?? ``).includes(q2)))
+      .slice(0, 8);
+  return H.jsxs(`div`, {
+    ref,
+    className: `relative flex-1`,
+    children: [
+      H.jsx(U, {
+        value: value,
+        readOnly: readOnly,
+        onChange: (v) => {
+          (onChange(v), setOpen(!0));
+        },
+      }),
+      !readOnly &&
+        open &&
+        matches.length > 0 &&
+        H.jsx(`div`, {
+          className: `no-print absolute inset-x-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-md border border-ink/60 bg-sheet shadow-lg`,
+          children: matches.map((c) =>
+            H.jsxs(
+              `button`,
+              {
+                type: `button`,
+                onClick: () => {
+                  (onPick?.(c), setOpen(!1));
+                },
+                className: `flex w-full items-center justify-between gap-2 px-2 py-1 text-right text-[12px] font-bold text-ink hover:bg-ink/10`,
+                children: [
+                  H.jsx(`span`, { children: c.name }),
+                  H.jsx(`span`, { className: `text-[11px] text-ink/70`, children: x(c.mobile ?? ``) }),
+                ],
+              },
+              `${c.name}-${c.serial}`,
+            ),
+          ),
+        }),
+    ],
+  });
+}
+function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPickClient }) {
   let r = (n, r, i) => {
       let a = [...e[n]];
       ((a[r] = i), t({ [n]: a }));
@@ -1361,10 +1427,12 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
                     className: `w-[52px] text-[13px] font-bold`,
                     children: `الاسم :`,
                   }),
-                  (0, H.jsx)(U, {
+                  (0, H.jsx)(ClientNameField, {
                     value: e.name,
                     readOnly: n,
-                    onChange: (e) => t({ name: e }),
+                    clients: clientList,
+                    onChange: (v) => t({ name: v }),
+                    onPick: onPickClient,
                   }),
                 ],
               }),
@@ -1539,10 +1607,11 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
                                             (0, H.jsx)(`option`, { value: e, children: e }, e),
                                           ),
                                         }),
-                                    (0, H.jsx)(`span`, {
-                                      className: `shrink-0 text-[12px] font-bold text-destructive`,
-                                      children: `هــ`,
-                                    }),
+                                    MEASURE_WHOLE_SUFFIX[r] &&
+                                      (0, H.jsx)(`span`, {
+                                        className: `shrink-0 text-[12px] font-bold text-destructive`,
+                                        children: `هــ`,
+                                      }),
                                   ],
                                 })
                               : (0, H.jsx)(W, {
@@ -1931,6 +2000,17 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot }) {
                               readOnly: n,
                               onChange: (e) => t({ cuffHeight: e }),
                             }),
+                            (0, H.jsx)(`div`, {
+                              className: `mt-1`,
+                              children: (0, H.jsx)(q, {
+                                title: `طول الكبك`,
+                                wholeAsSelect: !0,
+                                options: CUFF_LEN_OPTS,
+                                value: e.cuffLength ?? { whole: ``, frac: `` },
+                                readOnly: n,
+                                onChange: (e) => t({ cuffLength: e }),
+                              }),
+                            }),
                             (0, H.jsxs)(`div`, {
                               className: `mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-ink/50 py-[2px] text-[11px] font-bold text-ink`,
                               onClick: () => !n && t({ cuffEmbroidery: !e.cuffEmbroidery }),
@@ -2222,11 +2302,17 @@ function ue(e, day = todayISO()) {
     newCollected = newInvoices.reduce((s, o) => s + dayCollectedOf(o, day), 0),
     deferredCollected = deferred.reduce((s, o) => s + dayCollectedOf(o, day), 0),
     r = newInvoices.reduce((s, o) => s + X(o), 0),
+    // عدد الثياب: يُحسب آلياً من طلبات نفس اليوم (عدد الثياب في كل فاتورة)
+    garments = newInvoices.reduce(
+      (s, o) => s + (C(o.count) || orderItems(o).length || 0),
+      0,
+    ),
     i = list.reduce((s, o) => s + Math.max(0, X(o) - Y(o)), 0);
 
   return {
     stats: [
       { label: `عدد الطلبات`, value: x(newInvoices.length) },
+      { label: `عدد الثياب`, value: x(String(garments)) },
       { label: `تسليمات مؤجلة محصّلة`, value: x(deferred.length) },
       { label: `إجمالي الكاش`, value: w(t) },
       { label: `إجمالي الشبكة`, value: w(n) },
@@ -2406,8 +2492,8 @@ function annualReport(list, year) {
     rows,
   };
 }
-function de(e, t) {
-  let n = new Date().toISOString().slice(0, 10),
+function de(e, t, day) {
+  let n = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : new Date().toISOString().slice(0, 10),
     r = n.slice(0, 7);
   if (e.includes(`اليومي`)) return ue(ordersForDay(t, n), n);
   if (e.includes(`السنوي`)) return annualReport(t, n.slice(0, 4));
@@ -2523,6 +2609,7 @@ function fe() {
     [query, setQuery] = (0, u.useState)(``),
     [cardOrder, setCardOrder] = (0, u.useState)(null),
     [printReport, setPrintReport] = (0, u.useState)(null),
+    [reportDate, setReportDate] = (0, u.useState)(() => new Date().toISOString().slice(0, 10)),
     [greetingsOpen, setGreetingsOpen] = (0, u.useState)(!1),
     [tailorOpen, setTailorOpen] = (0, u.useState)(!1),
     [tailorBoardOpen, setTailorBoardOpen] = (0, u.useState)(!1),
@@ -2857,6 +2944,9 @@ function fe() {
         o.cuffHeight?.whole
           ? `ارتفاع الكبك: ${o.cuffHeight.whole}${hasFrac(o.cuffHeight.frac) ? ` ${o.cuffHeight.frac}` : ``}`
           : ``,
+        o.cuffLength?.whole
+          ? `طول الكبك: ${o.cuffLength.whole}${hasFrac(o.cuffLength.frac) ? ` ${o.cuffLength.frac}` : ``}`
+          : ``,
         o.placketHeight?.whole
           ? `ارتفاع الكسرة: ${o.placketHeight.whole}${hasFrac(o.placketHeight.frac) ? ` ${o.placketHeight.frac}` : ``}`
           : ``,
@@ -3002,6 +3092,42 @@ function fe() {
         ));
     },
 
+    // سجل العملاء المحفوظين: أحدث طلب لكل اسم (بحث ذكي فوري في خانة الاسم)
+    clientList = (0, u.useMemo)(() => {
+      let map = new Map();
+      for (let o of N) {
+        let key = (o.name ?? ``).trim();
+        if (!key) continue;
+        let prev = map.get(key);
+        if (!prev || Number(o.serial) > Number(prev.serial)) map.set(key, o);
+      }
+      return [...map.values()].sort((a, b) => (a.name ?? ``).localeCompare(b.name ?? ``, `ar`));
+    }, [N]),
+    // تعبئة مقاسات وبيانات العميل المسجّل مسبقاً بضغطة واحدة
+    onPickClient = (src) => {
+      if (!src) return;
+      let keep = new Set([
+        `serial`,
+        `createdAt`,
+        `receiptDate`,
+        `deliveryDate`,
+        `status`,
+        `cash`,
+        `card`,
+        `settleCash`,
+        `settleCard`,
+        `settledAt`,
+        `isArchival`,
+        `orderValue`,
+        `unitPrice`,
+        `count`,
+        `items`,
+        `paymentMethod`,
+      ]);
+      let patchObj = {};
+      for (let k2 of Object.keys(src)) if (!keep.has(k2)) patchObj[k2] = src[k2];
+      (b(patchObj), r.success(`تم استدعاء بيانات ومقاسات العميل ${src.name ?? ``}`));
+    },
     filteredOrders = (0, u.useMemo)(() => {
       let e = S2(query).trim().toLowerCase();
       return e
@@ -3430,7 +3556,15 @@ function fe() {
           }),
           (0, H.jsxs)(`main`, {
             className: `flex items-start justify-center gap-3 p-3 pb-16`,
-            children: [P(!1), (0, H.jsx)(J, { order: n, patch: b })],
+            children: [
+              P(!1),
+              (0, H.jsx)(J, {
+                order: n,
+                patch: b,
+                clientList: clientList,
+                onPickClient: onPickClient,
+              }),
+            ],
           }),
           (0, H.jsx)(`div`, {
             className: `no-print fixed inset-x-0 bottom-6 z-40 flex flex-wrap items-center justify-center gap-2 border-t-2 border-ink/40 bg-sheet px-3 py-2`,
@@ -4411,16 +4545,52 @@ function fe() {
               (0, H.jsxs)(`div`, {
                 className: `mb-3 flex items-center justify-between`,
                 children: [
-                  (0, H.jsx)(`h2`, {
+                  (0, H.jsxs)(`h2`, {
                     className: `text-[16px] font-bold text-ink`,
-                    children: f,
+                    children: [
+                      f,
+                      (f.includes(`اليومي`) || f.includes(`الشهري`)) &&
+                        (0, H.jsx)(`span`, {
+                          className: `ms-2 text-[12px] font-bold text-ink/70`,
+                          children: f.includes(`اليومي`)
+                            ? O(reportDate)
+                            : `${reportDate.slice(0, 7)}`,
+                        }),
+                    ],
                   }),
                   (0, H.jsxs)(`div`, {
-                    className: `flex items-center gap-2`,
+                    className: `flex flex-wrap items-center gap-2`,
                     children: [
+                      // بحث واستعراض ذكي بالتاريخ للتقرير اليومي والشهري
+                      (f.includes(`اليومي`) || f.includes(`الشهري`)) &&
+                        (0, H.jsx)(`input`, {
+                          type: `date`,
+                          value: reportDate,
+                          "aria-label": `تاريخ التقرير`,
+                          onChange: (e) =>
+                            setReportDate(
+                              e.target.value || new Date().toISOString().slice(0, 10),
+                            ),
+                          className: `rounded-md border border-ink/60 bg-transparent px-2 py-1 text-[13px] font-bold text-ink outline-none`,
+                        }),
+                      f.includes(`الشهري`) &&
+                        (0, H.jsx)(`button`, {
+                          type: `button`,
+                          onClick: () => y(`تقرير المبيعات اليومي`),
+                          className: `rounded-md border border-ink/60 px-3 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
+                          children: `عرض التقرير اليومي للتاريخ`,
+                        }),
+                      f.includes(`اليومي`) &&
+                        (0, H.jsx)(`button`, {
+                          type: `button`,
+                          onClick: () => y(`تقرير المبيعات الشهري`),
+                          className: `rounded-md border border-ink/60 px-3 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
+                          children: `عرض التقرير الشهري`,
+                        }),
                       (0, H.jsx)(`button`, {
                         type: `button`,
-                        onClick: () => setPrintReport({ title: f, data: de(f, N) }),
+                        onClick: () =>
+                          setPrintReport({ title: f, data: de(f, N, reportDate) }),
                         className: `rounded-md border border-ink/60 px-3 py-1 text-[13px] font-bold text-ink hover:bg-ink/10`,
                         children: `طباعة`,
                       }),
@@ -4434,7 +4604,7 @@ function fe() {
                 ],
               }),
               (() => {
-                let e = de(f, N);
+                let e = de(f, N, reportDate);
                 return (0, H.jsxs)(H.Fragment, {
                   children: [
                     (0, H.jsx)(`div`, {
