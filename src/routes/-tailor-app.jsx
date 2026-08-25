@@ -3593,20 +3593,49 @@ function fe() {
           }),
         ],
       }),
-      l &&
+      l === `client` &&
         (0, H.jsx)(`div`, {
           className: `print-only`,
           children: (0, H.jsxs)(`div`, {
-            className: `print-template ${l === `client` ? `print-client` : `print-tailor`} flex items-start justify-center gap-3`,
+            className: `print-template print-client flex items-start justify-center gap-3`,
             children: [
               // نسخة العميل: بدون خانة «الخياط المسؤول»
-              l === `client` && P(!0, !0),
-              (0, H.jsx)(J, {
-                order: n,
-                patch: b,
-                readOnly: !0,
-                // نسخة الخياط فقط: قائمة «الخياط المسؤول» أعلى اليمين تحت قائمة المقاسات
-                tailorSlot: l === `tailor` ? tailorPickerBox() : null,
+              P(!0, !0),
+              (0, H.jsx)(J, { order: n, patch: b, readOnly: !0 }),
+            ],
+          }),
+        }),
+      // نسخة الخياط: ورقة A4 عمودية مقسومة لنسختين (علوية ملونة + سفلية رمادية) وبينها خط قص أحمر منقّط
+      l === `tailor` &&
+        (0, H.jsx)(`div`, {
+          className: `print-only`,
+          children: (0, H.jsxs)(`div`, {
+            className: `print-duo`,
+            children: [
+              (0, H.jsx)(`div`, {
+                className: `print-duo-half`,
+                children: (0, H.jsx)(`div`, {
+                  className: `print-template print-tailor flex items-start justify-center gap-3`,
+                  children: (0, H.jsx)(J, {
+                    order: n,
+                    patch: b,
+                    readOnly: !0,
+                    tailorSlot: tailorPickerBox(),
+                  }),
+                }),
+              }),
+              (0, H.jsx)(`div`, { className: `print-duo-cut`, "aria-hidden": !0 }),
+              (0, H.jsx)(`div`, {
+                className: `print-duo-half print-duo-gray`,
+                children: (0, H.jsx)(`div`, {
+                  className: `print-template print-tailor flex items-start justify-center gap-3`,
+                  children: (0, H.jsx)(J, {
+                    order: n,
+                    patch: b,
+                    readOnly: !0,
+                    tailorSlot: tailorPickerBox(),
+                  }),
+                }),
               }),
             ],
           }),
