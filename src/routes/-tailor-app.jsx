@@ -1875,7 +1875,7 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPic
                           (0, H.jsx)(`img`, {
                             src: y[r],
                             alt: r,
-                            className: `h-[44px] cursor-pointer object-contain`,
+                            className: `h-[62px] w-full cursor-pointer object-contain`,
                             onClick: () => !n && t({ pocket: e.pocket === r ? `` : r }),
                           }),
                           (0, H.jsx)(G, {
