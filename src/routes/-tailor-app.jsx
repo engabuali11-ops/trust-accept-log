@@ -1875,7 +1875,7 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPic
                           (0, H.jsx)(`img`, {
                             src: y[r],
                             alt: r,
-                            className: `h-[44px] cursor-pointer object-contain`,
+                            className: `h-[62px] w-full cursor-pointer object-contain`,
                             onClick: () => !n && t({ pocket: e.pocket === r ? `` : r }),
                           }),
                           (0, H.jsx)(G, {
@@ -1976,41 +1976,50 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPic
                                      className: `w-[68px] text-[12px] font-bold`,
                                      children: r.label,
                                    }),
-                                   (0, H.jsx)(`img`, {
-                                     src: y[r.key],
-                                     alt: r.label,
-                                     className: `h-[20px] cursor-pointer object-contain`,
-                                     onClick: () => !n && t({ cuff: e.cuff === r.key ? `` : r.key }),
-                                   }),
-                                 ],
+                                    (0, H.jsx)(`img`, {
+                                      src: y[r.key],
+                                      alt: r.label,
+                                      className: `h-[30px] cursor-pointer object-contain`,
+                                      onClick: () => !n && t({ cuff: e.cuff === r.key ? `` : r.key }),
+                                    }),
+                                  ],
 
-                              },
-                              r.key,
-                            ),
-                          ),
-                        }),
-                        (0, H.jsxs)(`div`, {
-                          className: `mt-2`,
-                          children: [
-                            (0, H.jsx)(q, {
-                              title: `ارتفاع الكبك`,
-                              wholeAsSelect: !0,
-                              options: CUFF_H_OPTS,
-                              value: e.cuffHeight,
-                              readOnly: n,
-                              onChange: (e) => t({ cuffHeight: e }),
-                            }),
-                            (0, H.jsx)(`div`, {
-                              className: `mt-1`,
-                              children: (0, H.jsx)(q, {
-                                title: `طول الكبك`,
-                                wholeAsSelect: !0,
-                                options: CUFF_LEN_OPTS,
-                                value: e.cuffLength ?? { whole: ``, frac: `` },
-                                readOnly: n,
-                                onChange: (e) => t({ cuffLength: e }),
-                              }),
-                            }),
+                               },
+                               r.key,
+                             ),
+                           ),
+                         }),
+                         (0, H.jsxs)(`div`, {
+                           className: `mt-3`,
+                           children: [
+                             // مصفوفة أفقية: ارتفاع الكبك + طول الكبك جنباً إلى جنب
+                             (0, H.jsxs)(`div`, {
+                               className: `flex items-start gap-2`,
+                               children: [
+                                 (0, H.jsx)(`div`, {
+                                   className: `min-w-0 flex-1`,
+                                   children: (0, H.jsx)(q, {
+                                     title: `ارتفاع الكبك`,
+                                     wholeAsSelect: !0,
+                                     options: CUFF_H_OPTS,
+                                     value: e.cuffHeight,
+                                     readOnly: n,
+                                     onChange: (e) => t({ cuffHeight: e }),
+                                   }),
+                                 }),
+                                 (0, H.jsx)(`div`, {
+                                   className: `min-w-0 flex-1`,
+                                   children: (0, H.jsx)(q, {
+                                     title: `طول الكبك`,
+                                     wholeAsSelect: !0,
+                                     options: CUFF_LEN_OPTS,
+                                     value: e.cuffLength ?? { whole: ``, frac: `` },
+                                     readOnly: n,
+                                     onChange: (e) => t({ cuffLength: e }),
+                                   }),
+                                 }),
+                               ],
+                             }),
                             (0, H.jsxs)(`div`, {
                               className: `mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-ink/50 py-[2px] text-[11px] font-bold text-ink`,
                               onClick: () => !n && t({ cuffEmbroidery: !e.cuffEmbroidery }),
@@ -2048,7 +2057,7 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPic
                                   (0, H.jsx)(`img`, {
                                     src: y[r],
                                     alt: r,
-                                    className: `h-[34px] cursor-pointer object-contain`,
+                                    className: `h-[46px] cursor-pointer object-contain`,
                                     onClick: () => !n && t({ neck: e.neck === r ? `` : r }),
                                   }),
                                 ],
@@ -2695,6 +2704,14 @@ function fe() {
       if (!l) return;
       let e = () => d(null);
       window.addEventListener(`afterprint`, e);
+      // نسخة الخياط: فرض A4 عمودي بلا هوامش لاستيعاب النسختين في ورقة واحدة
+      let duoStyle = null;
+      if (l === `tailor`) {
+        ((duoStyle = document.createElement(`style`)),
+          duoStyle.setAttribute(`data-duo-portrait`, `1`),
+          (duoStyle.textContent = `@media print{@page{size:A4 portrait !important;size:portrait !important;margin:0 !important}html,body{width:210mm !important;max-width:210mm !important}}`),
+          document.head.appendChild(duoStyle));
+      }
       let t = window.setTimeout(() => window.print(), 120);
       // إرسال واتساب آلي مدمج داخل نسخة الخياط / نسخة العميل
       let wa = window.setTimeout(() => {
@@ -2703,7 +2720,8 @@ function fe() {
       return () => {
         (window.removeEventListener(`afterprint`, e),
           window.clearTimeout(t),
-          window.clearTimeout(wa));
+          window.clearTimeout(wa),
+          duoStyle?.remove());
       };
     }, [l]),
     (0, u.useEffect)(() => {
@@ -3593,20 +3611,49 @@ function fe() {
           }),
         ],
       }),
-      l &&
+      l === `client` &&
         (0, H.jsx)(`div`, {
           className: `print-only`,
           children: (0, H.jsxs)(`div`, {
-            className: `print-template ${l === `client` ? `print-client` : `print-tailor`} flex items-start justify-center gap-3`,
+            className: `print-template print-client flex items-start justify-center gap-3`,
             children: [
               // نسخة العميل: بدون خانة «الخياط المسؤول»
-              l === `client` && P(!0, !0),
-              (0, H.jsx)(J, {
-                order: n,
-                patch: b,
-                readOnly: !0,
-                // نسخة الخياط فقط: قائمة «الخياط المسؤول» أعلى اليمين تحت قائمة المقاسات
-                tailorSlot: l === `tailor` ? tailorPickerBox() : null,
+              P(!0, !0),
+              (0, H.jsx)(J, { order: n, patch: b, readOnly: !0 }),
+            ],
+          }),
+        }),
+      // نسخة الخياط: ورقة A4 عمودية مقسومة لنسختين (علوية ملونة + سفلية رمادية) وبينها خط قص أحمر منقّط
+      l === `tailor` &&
+        (0, H.jsx)(`div`, {
+          className: `print-only`,
+          children: (0, H.jsxs)(`div`, {
+            className: `print-duo`,
+            children: [
+              (0, H.jsx)(`div`, {
+                className: `print-duo-half`,
+                children: (0, H.jsx)(`div`, {
+                  className: `print-template print-tailor flex items-start justify-center gap-3`,
+                  children: (0, H.jsx)(J, {
+                    order: n,
+                    patch: b,
+                    readOnly: !0,
+                    tailorSlot: tailorPickerBox(),
+                  }),
+                }),
+              }),
+              (0, H.jsx)(`div`, { className: `print-duo-cut`, "aria-hidden": !0 }),
+              (0, H.jsx)(`div`, {
+                className: `print-duo-half print-duo-gray`,
+                children: (0, H.jsx)(`div`, {
+                  className: `print-template print-tailor flex items-start justify-center gap-3`,
+                  children: (0, H.jsx)(J, {
+                    order: n,
+                    patch: b,
+                    readOnly: !0,
+                    tailorSlot: tailorPickerBox(),
+                  }),
+                }),
               }),
             ],
           }),
