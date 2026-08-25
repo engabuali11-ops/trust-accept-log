@@ -1976,41 +1976,50 @@ function J({ order: e, patch: t, readOnly: n, tailorSlot, clientList = [], onPic
                                      className: `w-[68px] text-[12px] font-bold`,
                                      children: r.label,
                                    }),
-                                   (0, H.jsx)(`img`, {
-                                     src: y[r.key],
-                                     alt: r.label,
-                                     className: `h-[20px] cursor-pointer object-contain`,
-                                     onClick: () => !n && t({ cuff: e.cuff === r.key ? `` : r.key }),
-                                   }),
-                                 ],
+                                    (0, H.jsx)(`img`, {
+                                      src: y[r.key],
+                                      alt: r.label,
+                                      className: `h-[30px] cursor-pointer object-contain`,
+                                      onClick: () => !n && t({ cuff: e.cuff === r.key ? `` : r.key }),
+                                    }),
+                                  ],
 
-                              },
-                              r.key,
-                            ),
-                          ),
-                        }),
-                        (0, H.jsxs)(`div`, {
-                          className: `mt-2`,
-                          children: [
-                            (0, H.jsx)(q, {
-                              title: `ارتفاع الكبك`,
-                              wholeAsSelect: !0,
-                              options: CUFF_H_OPTS,
-                              value: e.cuffHeight,
-                              readOnly: n,
-                              onChange: (e) => t({ cuffHeight: e }),
-                            }),
-                            (0, H.jsx)(`div`, {
-                              className: `mt-1`,
-                              children: (0, H.jsx)(q, {
-                                title: `طول الكبك`,
-                                wholeAsSelect: !0,
-                                options: CUFF_LEN_OPTS,
-                                value: e.cuffLength ?? { whole: ``, frac: `` },
-                                readOnly: n,
-                                onChange: (e) => t({ cuffLength: e }),
-                              }),
-                            }),
+                               },
+                               r.key,
+                             ),
+                           ),
+                         }),
+                         (0, H.jsxs)(`div`, {
+                           className: `mt-3`,
+                           children: [
+                             // مصفوفة أفقية: ارتفاع الكبك + طول الكبك جنباً إلى جنب
+                             (0, H.jsxs)(`div`, {
+                               className: `flex items-start gap-2`,
+                               children: [
+                                 (0, H.jsx)(`div`, {
+                                   className: `min-w-0 flex-1`,
+                                   children: (0, H.jsx)(q, {
+                                     title: `ارتفاع الكبك`,
+                                     wholeAsSelect: !0,
+                                     options: CUFF_H_OPTS,
+                                     value: e.cuffHeight,
+                                     readOnly: n,
+                                     onChange: (e) => t({ cuffHeight: e }),
+                                   }),
+                                 }),
+                                 (0, H.jsx)(`div`, {
+                                   className: `min-w-0 flex-1`,
+                                   children: (0, H.jsx)(q, {
+                                     title: `طول الكبك`,
+                                     wholeAsSelect: !0,
+                                     options: CUFF_LEN_OPTS,
+                                     value: e.cuffLength ?? { whole: ``, frac: `` },
+                                     readOnly: n,
+                                     onChange: (e) => t({ cuffLength: e }),
+                                   }),
+                                 }),
+                               ],
+                             }),
                             (0, H.jsxs)(`div`, {
                               className: `mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-ink/50 py-[2px] text-[11px] font-bold text-ink`,
                               onClick: () => !n && t({ cuffEmbroidery: !e.cuffEmbroidery }),
