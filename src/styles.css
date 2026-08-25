@@ -673,6 +673,75 @@ table:has(.ms-row) thead th {
     overflow: hidden !important;
   }
 
+  /* ====== نسخة الخياط المزدوجة: ورقة A4 عمودية = نسختان + خط قص أحمر ====== */
+  html:has(.print-duo),
+  body:has(.print-duo) {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body:has(.print-duo) > *:has(.print-only) {
+    width: 210mm !important;
+    max-width: 210mm !important;
+  }
+  .print-only:has(.print-duo) {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: static !important;
+  }
+  .print-duo {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-duo-half {
+    position: relative !important;
+    width: 210mm !important;
+    height: 147mm !important;
+    max-height: 147mm !important;
+    overflow: hidden !important;
+    display: block !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-duo-half .print-template.print-tailor {
+    zoom: 0.655 !important;
+    width: 1180px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+  /* النسخة السفلية: أبيض وأسود (تحتفظ بها ورشة الخياط) */
+  .print-duo-gray,
+  .print-duo-gray * {
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
+  }
+  .print-duo-gray .print-title,
+  .print-duo-gray .print-client-name {
+    color: #000 !important;
+  }
+  /* خط القص: أحمر منقّط وسميك في منتصف الورقة تماماً */
+  .print-duo-cut {
+    height: 3mm !important;
+    width: 210mm !important;
+    border-top: 1.2mm dashed #dc2626 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+
 
   /* ====== إظهار إجباري لكل عناصر التقرير عند الطباعة/PDF ====== */
   .print-only:has(.print-report-sheet),
