@@ -2695,6 +2695,14 @@ function fe() {
       if (!l) return;
       let e = () => d(null);
       window.addEventListener(`afterprint`, e);
+      // نسخة الخياط: فرض A4 عمودي بلا هوامش لاستيعاب النسختين في ورقة واحدة
+      let duoStyle = null;
+      if (l === `tailor`) {
+        ((duoStyle = document.createElement(`style`)),
+          duoStyle.setAttribute(`data-duo-portrait`, `1`),
+          (duoStyle.textContent = `@media print{@page{size:A4 portrait !important;size:portrait !important;margin:0 !important}html,body{width:210mm !important;max-width:210mm !important}}`),
+          document.head.appendChild(duoStyle));
+      }
       let t = window.setTimeout(() => window.print(), 120);
       // إرسال واتساب آلي مدمج داخل نسخة الخياط / نسخة العميل
       let wa = window.setTimeout(() => {
@@ -2703,7 +2711,8 @@ function fe() {
       return () => {
         (window.removeEventListener(`afterprint`, e),
           window.clearTimeout(t),
-          window.clearTimeout(wa));
+          window.clearTimeout(wa),
+          duoStyle?.remove());
       };
     }, [l]),
     (0, u.useEffect)(() => {
