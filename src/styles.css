@@ -942,9 +942,10 @@ table:has(.ms-row) tbody .ms-row:first-child > td,
   box-sizing: border-box !important;
 }
 /* تكبير قائمة الجيوب أفقيًا حتى الحد الأيمن لقائمة الملاحظات */
+/* قائمة الجيوب: توسعة أفقية إضافية لإبراز الرسومات الهندسية للخياط */
 .pockets-panel {
-  width: calc(100% + 198px) !important;
-  margin-right: -198px !important;
+  width: calc(100% + 300px) !important;
+  margin-right: -300px !important;
   box-sizing: border-box !important;
 }
 
